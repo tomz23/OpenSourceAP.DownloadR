@@ -16,7 +16,7 @@ get_session = function() {
 }
 
 #Test
-#sess <- get_session()
+sess <- get_session()
 #print(sess)
 
 url <- "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k"
@@ -179,7 +179,7 @@ download_and_parse_google_drive_link <- function(sess, url) {
 }
 
 # Test
-#download_and_parse_google_drive_link(sess, url)
+download_and_parse_google_drive_link(sess, url)
 
 
 
@@ -235,13 +235,13 @@ get_individual_signal_folder_id <- function(sess, url) {
 }
 
 # Test
-#get_individual_signal_folder_id(sess, url)
+get_individual_signal_folder_id(sess, url)
 
 
 
 
 
-get_directory_structure <- function(gdrive_file) {
+get_directory_structure <- function(gdrive_file, visited = character()) {
   # Initialize an empty directory structure list
   directory_structure <- list()
   
@@ -250,12 +250,20 @@ get_directory_structure <- function(gdrive_file) {
     # Replace problematic characters in file names
     file$name <- gsub("/", "_", file$name)
     
+    # Skip if file_id is already visited
+    if (!is.null(file$id) && file$id %in% visited) {
+      next
+    }
+    
+    # Mark file_id as visited
+    visited <- c(visited, file$id)
+    
     if (file$type == "application/vnd.google-apps.folder") {
       # Add folder to the structure
       directory_structure <- append(directory_structure, list(c(NULL, file$name)))
       
       # Recursively get subdirectory structure
-      subdir_structure <- get_directory_structure(file)
+      subdir_structure <- get_directory_structure(file, visited)
       directory_structure <- append(directory_structure, subdir_structure)
     } else if (is.null(file$children)) {
       # Add file to the structure
@@ -266,68 +274,62 @@ get_directory_structure <- function(gdrive_file) {
   return(directory_structure)
 }
 
+
+
 # Test
-#get_directory_structure(gdrive_file)
+gdrive_file_test = download_and_parse_google_drive_link(sess, url)
+test = get_directory_structure(gdrive_file_test)
 
 
 
-
-
+duplicates <- check_duplicates(test)
 
 
 
 
 
 get_url_from_gdrive_confirmation <- function(contents) {
-  url <- ""
+  # Parse the HTML content
+  soup <- read_html(contents)
   
-  # Split the contents into lines
-  lines <- unlist(strsplit(contents, "\n"))
-  
-  for (line in lines) {
-    # Check for direct download link
-    m <- regmatches(line, regexec('href="(/uc\\?export=download[^"]+)"', line))
-    if (length(m[[1]]) > 0) {
-      url <- paste0("https://docs.google.com", m[[1]][2])
-      url <- gsub("&amp;", "&", url)
-      break
-    }
-    
-    # Parse the line with rvest
-    soup <- read_html(line)
-    form <- html_node(soup, "#download-form")
-    if (!is.null(form)) {
-      url <- html_attr(form, "action")
-      url <- gsub("&amp;", "&", url)
-      break
-    }
-    
-    # Look for alternative downloadUrl pattern
-    m <- regmatches(line, regexec('"downloadUrl":"([^"]+)', line))
-    if (length(m[[1]]) > 0) {
-      url <- m[[1]][2]
-      url <- gsub("\\\\u003d", "=", url)
-      url <- gsub("\\\\u0026", "&", url)
-      break
-    }
-    
-    # Handle error messages
-    m <- regmatches(line, regexec('<p class="uc-error-subcaption">(.*)</p>', line))
-    if (length(m[[1]]) > 0) {
-      error <- m[[1]][2]
-      stop(paste("File URL retrieval error:", error))
-    }
+  # Find the download form and its action URL
+  form <- html_node(soup, "form#download-form")
+  if (is.null(form)) {
+    stop("Download form not found in the HTML content.")
   }
   
-  if (url == "") {
-    stop("Cannot retrieve the public link of the file. Ensure the file is accessible.")
+  action <- html_attr(form, "action")
+  if (is.null(action)) {
+    stop("Form action URL not found.")
   }
   
-  return(url)
+  # Extract hidden input fields
+  inputs <- html_nodes(form, "input[type='hidden']")
+  params <- sapply(inputs, function(input) {
+    name <- html_attr(input, "name")
+    value <- html_attr(input, "value")
+    if (!is.null(name) && !is.null(value)) {
+      paste0(name, "=", URLencode(value, reserved = TRUE))
+    } else {
+      NULL
+    }
+  })
+  
+  # Construct the full URL with query parameters
+  query <- paste(na.omit(params), collapse = "&")
+  full_url <- paste0(action, "?", query)
+  
+  return(full_url)
 }
 
+
 # Test
-#get_url_from_gdrive_confirmation(contents)
+url <- "https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y"
+response <- httr::GET(url, config = sess)
+content <- httr::content(response, as = "text", encoding = "UTF-8")
+
+get_url_from_gdrive_confirmation(content)
+
 
 
 
@@ -386,12 +388,14 @@ get_name_id_map <- function(url) {
   return(list(main = df, signals = signal_matches))
 }
 
-
 # Test
-#name_id_map = get_name_id_map(url)
+name_id_map = get_name_id_map(url)
+name_id_map
 
-
-
+# Predictors and download names (no duplicates:)
+name_id_map$main %>%
+  dplyr::filter(stringr::str_starts(name, "Predictor")) %>%
+  dplyr::select(name, download_name)
 
 
 
@@ -402,8 +406,9 @@ get_readable_link <- function(url) {
   return(readable_link)
 }
 
+
 # Test 
-#get_readable_link(url)
+get_readable_link("https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y")  #success 
 
 
 
@@ -456,35 +461,29 @@ OpenAP <- R6::R6Class(
     },
 
     get_url = function(data_name) {
-      # Filter the dataset for matching download_name
-      data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
-      
-      # Check if no matching entry exists
-      if (nrow(data_entry) == 0) {
-        stop("Dataset not found in name_id_map.")
-      }
-      
-      # Handle duplicates by taking the first unique URL
-      url <- unique(data_entry$file_id)
-      
-      if (length(url) > 1) {
-        message("Warning: Multiple entries found for ", data_name, ". Using the first one.")
-      }
-      
-      url <- url[1] # Use the first unique URL
+    # Filter the dataset for matching download_name
+    data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
+    
+    # Check if no matching entry exists
+    if (nrow(data_entry) == 0) {
+      stop("Dataset not found in name_id_map.")
+    }
+    
+    # Extract the URL
+    url <- data_entry$file_id[1] 
 
-      # Handle special cases for files that need confirmation
-      file_with_confirm <- c("firm_char", "deciles_ew", "deciles_vw")
-      if (data_name %in% file_with_confirm) {
-        if (exists("get_readable_link")) {
-          url <- get_readable_link(url)
-        } else {
-          stop("`get_readable_link` function is not implemented.")
-        }
+    # Handle special cases for files that need confirmation
+    file_with_confirm <- c("firm_char", "deciles_ew", "deciles_vw")
+    if (data_name %in% file_with_confirm) {
+      if (exists("get_readable_link")) {
+        url <- get_readable_link(url)
+      } else {
+        stop("`get_readable_link` function is not implemented.")
       }
-      
-      return(url)
-    },
+    }
+    
+    return(url)
+  },
 
     download_port = function(data_name, predictor = NULL) {
       if (is.null(self$name_id_map)) {
@@ -538,10 +537,21 @@ OpenAP <- R6::R6Class(
 )
 
 
+# Tests (final package)
+
+# Unzip error:
+temp_file = tempfile()
+download.file("https://drive.google.com/uc?id=1nS0XHY84ZPOqxos7-8JfKvoojTDgoZ3_", temp_file)
+
+unzip(temp_file)
 
 
 
-# Tests:
+
+
+
+
+# Examples:
 # initialize instance
 openap_instance <- OpenAP$new()
 
@@ -551,11 +561,13 @@ openap_instance$list_port()
 # get url dependant on folder/file key
 openap_instance$get_url("signal_doc")
 
+# get data
 data <- openap_instance$download_port("nyse")
 head(data)
 
 # specific predictors:
-data2 <- openap_instance$download_port("op", predictor = c("Predictor1", "Predictor2"))
+data2 <- openap_instance$download_port("nyse")
+head(data2)
 
 # all signals:
 signals <- openap_instance$download_signal()

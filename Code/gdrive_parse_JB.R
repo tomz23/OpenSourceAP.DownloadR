@@ -1,6 +1,6 @@
 library(httr)
 library(tidyverse)
-
+library(data.table)
 
 # reqest session
 get_session = function() {
@@ -447,7 +447,7 @@ process_zip <- function(zip_path) {
     }
 
     # Read the first CSV file
-    data <- read.csv(csv_files[1])
+    data <- fread(csv_files[1])
     return(data)
 }
 
@@ -546,7 +546,7 @@ OpenAP <- R6::R6Class(
     download_signal = function(predictor = NULL) {
         # Step 1: Get URL
         url <- self$get_url("firm_char")
-        print(url)  # Debug: Verify the URL
+        #print(url)  # Debug: Verify the URL
 
         # Step 2: Download file
         temp_file <- tempfile()
@@ -576,6 +576,12 @@ OpenAP <- R6::R6Class(
         }
 
         return(data)
+    }, 
+    
+    download_signal_doc = function() {
+      url <- self$get_url("signal_doc")
+      data <- read.csv(url)
+      return(data)
     }
 
   )
@@ -597,53 +603,32 @@ openap_instance$get_url("nyse")
 data <- openap_instance$download_port("deciles_ew")
 head(data)
 
-# specific predictors:
 data2 <- openap_instance$download_port("nyse")
 head(data2)
 
-# all signals:
-signals <- openap_instance$download_signal()
-head(signals)
+# specific predictors
+data3 <- openap_instance$download_port("deciles_ew", predictor = c("Accruals"))
+head(data3)
+data4 <- openap_instance$download_port("deciles_ew", predictor = c("BM", "Mom6m"))
+head(data4)
+
+
+# signal doc: 
+signal_doc = openap_instance$download_signal_doc()
+View(signal_doc)
+
+# download all signals (long download time):
+signals_data1 <- openap_instance$download_signal()
+head(signals_data1)
+dim(signals_data1)
 
 # specific signals:
-signals <- openap_instance$download_signal(predictor = c("BM"))
+signals2 <- openap_instance$download_signal(predictor = c("BM"))
+head(signals)
 
 
+print(unique(data$signalname))
 
-
-
-
-
-
-
-download_signal = function(predictor = NULL) {
-      # Download signal data
-      url <- self$get_url("firm_char")
-      temp_file <- tempfile()
-      download.file(url, temp_file)
-
-      data <- read.csv(temp_file)
-      if (!is.null(predictor)) {
-        data <- data[data$signalname %in% predictor, ]
-      }
-
-      return(data)
-    }
-
-url
-temp_file <- tempfile()
-download.file(url, temp_file, mode = "wb")  # Use binary mode for non-text files
-print(temp_file)  # Debug: Check the path of the temporary file
-
-
-
-
-print(file.info(temp_file))  # Check file info (size, existence, etc.)
-print(readLines(temp_file, n = 10))  # Print the first 10 lines of the file
-
-
-
-read.csv(temp_file)
 
 
 

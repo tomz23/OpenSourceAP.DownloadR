@@ -4,26 +4,24 @@ library(data.table)
 
 # reqest session
 get_session = function() {
-  
+
   user_agent = 
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) 
         AppleWebKit/537.36 (KHTML, like Gecko) 
         Chrome/98.0.4758.102 Safari/537.36"
-  
+
   sess <- httr::config(useragent = user_agent)
-  
+
   return(sess)
 }
 
-#Test
-sess <- get_session()
+# Test get_session()
+#sess <- get_session()
 #print(sess)
-
-url <- "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k"
-response <- httr::GET(url, config = sess)
+#url <- "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k"  #url of main folder
+#response <- httr::GET(url, config = sess)
 #print(httr::status_code(response))
-
-content <- httr::content(response, as = "text", encoding = "UTF-8")
+#content <- httr::content(response, as = "text", encoding = "UTF-8")
 #writeLines(content, "google_drive_test.html")
 
 
@@ -36,17 +34,17 @@ library(jsonlite)
 library(stringr)
 
 parse_google_drive_file <- function(url, content) {
-  # Parse HTML content with rvest
+  # Parse HTML content 
   folder_soup <- read_html(content)
-  
-  # Find the script tag with window['_DRIVE_ivd']
+
+  # search for ['_DRIVE_ivd']
   encoded_data <- NULL
   script_tags <- html_nodes(folder_soup, "script") %>% html_text()
   encoded_data <- script_tags[str_detect(script_tags, "_DRIVE_ivd")] %>%
     str_match("window\\['_DRIVE_ivd'\\]\\s*=\\s*'(.*?)';") %>%
     .[2]
 
-  
+
   if (is.null(encoded_data)) {
     stop("Cannot retrieve the folder information from the link. You may need to change the permission to 'Anyone with the link', or have had many accesses.")
   }
@@ -65,21 +63,19 @@ parse_google_drive_file <- function(url, content) {
   return(character)
   })
 
-  
   decoded_data <- encoded_data
   for (i in seq_along(matched_strings[[1]])) {
     decoded_data <- sub(matched_strings[[1]][i], decoded_matches[i], decoded_data, fixed = TRUE)
   }
-
   folder_arr <- fromJSON(decoded_data)
-  
+
   # Folder name and contents extraction
   if (is.null(folder_arr[[1]])) {
     folder_contents <- list()
   } else {
     folder_contents <- folder_arr  
   }
-  sep <- " - "  # unicode dash
+  sep <- " - "  
   title_text <- html_text(html_nodes(folder_soup, "title"))
   splitted <- str_split(title_text, sep)[[1]]
   if (length(splitted) >= 2) {
@@ -114,14 +110,13 @@ parse_google_drive_file <- function(url, content) {
   })
 
 
-    gdrive_file$children <- id_name_type_iter
-    return(list(gdrive_file = gdrive_file, id_name_type_iter = id_name_type_iter))
-  }
-
+  gdrive_file$children <- id_name_type_iter
+  return(list(gdrive_file = gdrive_file, id_name_type_iter = id_name_type_iter))
+}
 
 # Test
 #parse_google_drive_file(url, content)
-# success! (warning can be ignored at this place)
+# success! (warning can be ignored here)
 
 
 
@@ -131,13 +126,13 @@ download_and_parse_google_drive_link <- function(sess, url) {
   for (i in 1:2) {
     # Add "?hl=en" to ensure the content is in English
     url <- ifelse(grepl("\\?", url), paste0(url, "&hl=en"), paste0(url, "?hl=en"))
-    
+
     # Get the folder content
     response <- GET(url, config = sess)
     if (status_code(response) != 200) {
       stop("Failed to fetch the page. HTTP status code: ", status_code(response))
     }
-    
+
     # Update URL in case of redirection
     url <- response$url
   }
@@ -179,14 +174,13 @@ download_and_parse_google_drive_link <- function(sess, url) {
 }
 
 # Test
-download_and_parse_google_drive_link(sess, url)
+#download_and_parse_google_drive_link(sess, url)  #(no error here anymore)
 
 
 
 
 
 # Function to recursively search for the folder named 'Predictors'
-
 get_individual_signal_folder_id <- function(sess, url) {
   # Ensure the URL is set to English
   if (!grepl("\\?", url)) {
@@ -212,7 +206,7 @@ get_individual_signal_folder_id <- function(sess, url) {
     child_id <- child[[1]]
     child_name <- child[[2]]
     child_type <- child[[3]]
-    
+
     # Return the ID if the folder name is 'Predictors'
     if (child_type == "application/vnd.google-apps.folder" && child_name == "Predictors") {
       return(child_id)
@@ -235,19 +229,17 @@ get_individual_signal_folder_id <- function(sess, url) {
 }
 
 # Test
-get_individual_signal_folder_id(sess, url)
+#get_individual_signal_folder_id(sess, url)
 
 
 
 
 
 get_directory_structure <- function(gdrive_file, visited = character()) {
-  # Initialize an empty directory structure list
   directory_structure <- list()
-  
+
   # Loop through each child in the folder
   for (file in gdrive_file$children) {
-    # Replace problematic characters in file names
     file$name <- gsub("/", "_", file$name)
     
     # Skip if file_id is already visited
@@ -274,20 +266,14 @@ get_directory_structure <- function(gdrive_file, visited = character()) {
   return(directory_structure)
 }
 
-
-
 # Test
-gdrive_file_test = download_and_parse_google_drive_link(sess, url)
-test = get_directory_structure(gdrive_file_test)
-
-
-
-duplicates <- check_duplicates(test)
+#gdrive_file_test = download_and_parse_google_drive_link(sess, url)
+#test = get_directory_structure(gdrive_file_test)
 
 
 
 
-
+# adress confirmation message when downloading large data
 get_url_from_gdrive_confirmation <- function(contents) {
   # Parse the HTML content
   soup <- read_html(contents)
@@ -322,21 +308,15 @@ get_url_from_gdrive_confirmation <- function(contents) {
   return(full_url)
 }
 
-
 # Test
-url <- "https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y"
-response <- httr::GET(url, config = sess)
-content <- httr::content(response, as = "text", encoding = "UTF-8")
-
-get_url_from_gdrive_confirmation(content)
-
+#url <- "https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y"
+#response <- httr::GET(url, config = sess)
+#content <- httr::content(response, as = "text", encoding = "UTF-8")
+#get_url_from_gdrive_confirmation(content)
 
 
 
-
-
-
-
+# summarized information:
 get_name_id_map <- function(url) {
   sess <- get_session()
   
@@ -389,13 +369,8 @@ get_name_id_map <- function(url) {
 }
 
 # Test
-name_id_map = get_name_id_map(url)
-name_id_map
-
-# Predictors and download names (no duplicates:)
-name_id_map$main %>%
-  dplyr::filter(stringr::str_starts(name, "Predictor")) %>%
-  dplyr::select(name, download_name)
+#name_id_map = get_name_id_map(url)
+#name_id_map
 
 
 
@@ -408,14 +383,14 @@ get_readable_link <- function(url) {
 
 
 # Test 
-get_readable_link("https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y")  #success 
+#get_readable_link("https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y")  #success 
 
 
 
 
-##############
-# Creating the package
-
+########################
+# final package
+########################
 
 list_release <- function(urls) {
   releases <- sapply(names(urls), function(x) {

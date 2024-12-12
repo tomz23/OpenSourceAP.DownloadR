@@ -270,7 +270,7 @@ get_directory_structure <- function(gdrive_file, visited = character()) {
       directory_structure <- append(directory_structure, list(c(file$id, file$name)))
     }
   }
-  
+
   return(directory_structure)
 }
 
@@ -291,18 +291,18 @@ duplicates <- check_duplicates(test)
 get_url_from_gdrive_confirmation <- function(contents) {
   # Parse the HTML content
   soup <- read_html(contents)
-  
+
   # Find the download form and its action URL
   form <- html_node(soup, "form#download-form")
   if (is.null(form)) {
     stop("Download form not found in the HTML content.")
   }
-  
+
   action <- html_attr(form, "action")
   if (is.null(action)) {
     stop("Form action URL not found.")
   }
-  
+
   # Extract hidden input fields
   inputs <- html_nodes(form, "input[type='hidden']")
   params <- sapply(inputs, function(input) {
@@ -432,6 +432,25 @@ list_release <- function(urls) {
 }
 
 
+process_zip <- function(zip_path) {
+    # Temporary output directory
+    output_dir <- tempdir()
+    
+    # Extract files and get their paths
+    extracted_files <- unzip(zip_path, exdir = output_dir)
+    #print(extracted_files)  
+
+    # Locate CSV files from the extracted files
+    csv_files <- extracted_files[grepl("\\.csv$", extracted_files, ignore.case = TRUE)]
+    if (length(csv_files) == 0) {
+        stop("No CSV files found in the ZIP archive.")
+    }
+
+    # Read the first CSV file
+    data <- read.csv(csv_files[1])
+    return(data)
+}
+
 
 
 
@@ -461,97 +480,110 @@ OpenAP <- R6::R6Class(
     },
 
     get_url = function(data_name) {
-    # Filter the dataset for matching download_name
-    data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
-    
-    # Check if no matching entry exists
-    if (nrow(data_entry) == 0) {
-      stop("Dataset not found in name_id_map.")
-    }
-    
-    # Extract the URL
-    url <- data_entry$file_id[1] 
-
-    # Handle special cases for files that need confirmation
-    file_with_confirm <- c("firm_char", "deciles_ew", "deciles_vw")
-    if (data_name %in% file_with_confirm) {
-      if (exists("get_readable_link")) {
-        url <- get_readable_link(url)
-      } else {
-        stop("`get_readable_link` function is not implemented.")
+      # Filter the dataset for matching download_name
+      data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
+      
+      # Check if no matching entry exists
+      if (nrow(data_entry) == 0) {
+        stop("Dataset not found in name_id_map.")
       }
-    }
-    
-    return(url)
-  },
+      
+      # Extract the URL
+      url <- data_entry$file_id[1] 
+
+      # Handle special cases for files that need confirmation
+      file_with_confirm <- c("firm_char", "deciles_ew", "deciles_vw")
+      if (data_name %in% file_with_confirm) {
+        if (exists("get_readable_link")) {
+          url <- get_readable_link(url)
+        } else {
+          stop("`get_readable_link` function is not implemented.")
+        }
+      }
+      
+      return(url)
+    },
 
     download_port = function(data_name, predictor = NULL) {
-      if (is.null(self$name_id_map)) {
-        stop("name_id_map is not initialized.")
-      }
+        if (is.null(self$name_id_map)) {
+            stop("name_id_map is not initialized.")
+        }
 
-      # Get URL
-      url <- self$get_url(data_name)
+        # Get URL
+        url <- self$get_url(data_name)
 
-      # Download and process the data
-      temp_file <- tempfile()
-      download.file(url, temp_file)
+        # Download the file to a temporary location
+        temp_file <- tempfile()
+        download.file(url, temp_file, mode = "wb")  # Ensure binary mode for ZIP files
 
-      if (grepl("\\.zip$", url)) {
-        # Handle ZIP files
-        zip_files <- unzip(temp_file, list = TRUE)
-        data <- read.csv(unz(temp_file, zip_files$Name[1]))
-      } else {
-        data <- read.csv(temp_file)
-      }
+        # Check file type using magic bytes
+        con <- file(temp_file, "rb")
+        magic_bytes <- readBin(con, "raw", 4)
+        close(con)
 
-      # Filter data by predictors if provided
-      if (!is.null(predictor)) {
-        data <- data[data$signalname %in% predictor, ]
-      }
+        # Detect if the file is a ZIP (magic bytes start with 'PK..')
+        if (all(magic_bytes[1:2] == charToRaw("PK"))) {
+            # Handle ZIP files using process_zip
+            data <- process_zip(temp_file)
+        } else {
+            # Handle direct CSV files
+            data <- tryCatch(
+                read.csv(temp_file),
+                error = function(e) stop("Error reading CSV file: ", e$message)
+            )
+        }
 
-      data <- data[order(data$signalname, data$port, data$date), ]
-      return(data)
+        # Filter data by predictors if provided
+        if (!is.null(predictor)) {
+            data <- data[data$signalname %in% predictor, ]
+        }
+
+        # Order the data
+        data <- data[order(data$signalname, data$port, data$date), ]
+        return(data)
     },
 
     download_signal = function(predictor = NULL) {
-      # Download signal data
-      url <- self$get_url("firm_char")
-      temp_file <- tempfile()
-      download.file(url, temp_file)
+        # Step 1: Get URL
+        url <- self$get_url("firm_char")
+        print(url)  # Debug: Verify the URL
 
-      data <- read.csv(temp_file)
-      if (!is.null(predictor)) {
-        data <- data[data$signalname %in% predictor, ]
-      }
+        # Step 2: Download file
+        temp_file <- tempfile()
+        download.file(url, temp_file, mode = "wb")
+        print(temp_file)  # Debug: Check the path of the temporary file
 
-      return(data)
-    },
+        # Step 3: Process the file
+        # Use process_zip for ZIP files, otherwise attempt to read as CSV
+        con <- file(temp_file, "rb")
+        magic_bytes <- readBin(con, "raw", 4)
+        close(con)
 
-    download_signal_doc = function() {
-      url <- self$get_url("signal_doc")
-      data <- read.csv(url)
-      return(data)
+        if (all(magic_bytes[1:2] == charToRaw("PK"))) {
+            print("The file is a ZIP archive.")
+            data <- process_zip(temp_file)
+        } else {
+            print("The file is a plain CSV.")
+            data <- tryCatch(
+                read.csv(temp_file),
+                error = function(e) stop("Error reading CSV file: ", e$message)
+            )
+        }
+
+        # Step 4: Filter data by predictor if provided
+        if (!is.null(predictor)) {
+            data <- data[data$signalname %in% predictor, ]
+        }
+
+        return(data)
     }
+
   )
 )
 
 
-# Tests (final package)
 
-# Unzip error:
-temp_file = tempfile()
-download.file("https://drive.google.com/uc?id=1nS0XHY84ZPOqxos7-8JfKvoojTDgoZ3_", temp_file)
-
-unzip(temp_file)
-
-
-
-
-
-
-
-# Examples:
+# Examples (final package):
 # initialize instance
 openap_instance <- OpenAP$new()
 
@@ -559,10 +591,10 @@ openap_instance <- OpenAP$new()
 openap_instance$list_port()
 
 # get url dependant on folder/file key
-openap_instance$get_url("signal_doc")
+openap_instance$get_url("nyse")
 
 # get data
-data <- openap_instance$download_port("nyse")
+data <- openap_instance$download_port("deciles_ew")
 head(data)
 
 # specific predictors:
@@ -574,7 +606,7 @@ signals <- openap_instance$download_signal()
 head(signals)
 
 # specific signals:
-signals <- openap_instance$download_signal(predictor = c("Signal1", "Signal2"))
+signals <- openap_instance$download_signal(predictor = c("BM"))
 
 
 
@@ -584,16 +616,34 @@ signals <- openap_instance$download_signal(predictor = c("Signal1", "Signal2"))
 
 
 
+download_signal = function(predictor = NULL) {
+      # Download signal data
+      url <- self$get_url("firm_char")
+      temp_file <- tempfile()
+      download.file(url, temp_file)
+
+      data <- read.csv(temp_file)
+      if (!is.null(predictor)) {
+        data <- data[data$signalname %in% predictor, ]
+      }
+
+      return(data)
+    }
+
+url
+temp_file <- tempfile()
+download.file(url, temp_file, mode = "wb")  # Use binary mode for non-text files
+print(temp_file)  # Debug: Check the path of the temporary file
 
 
 
 
+print(file.info(temp_file))  # Check file info (size, existence, etc.)
+print(readLines(temp_file, n = 10))  # Print the first 10 lines of the file
 
 
 
-
-
-
+read.csv(temp_file)
 
 
 

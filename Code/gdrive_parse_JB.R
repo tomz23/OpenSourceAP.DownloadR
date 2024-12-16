@@ -413,8 +413,30 @@ get_readable_link("https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj
 
 
 
-##############
+######################
 # Creating the package
+
+urls <- list(
+  release202410_url = "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k",
+  release202408_url = "https://drive.google.com/drive/folders/1-PqsR-tOjv3-U9DRHw85X-VznYlu-Sfc",
+  release2023_url   = "https://drive.google.com/drive/folders/1EP6oEabyZRamveGNyzYU0u6qJ-N43Qfq",
+  release2022_url   = "https://drive.google.com/drive/folders/1O18scg9iBTiBaDiQFhoGxdn4FdsbMqGo"
+)
+
+
+list_release <- function(urls) {
+  release_numbers <- str_extract(names(urls), "\\d+") # Extract release numbers 
+
+  df <- data.frame(Release = as.integer(release_numbers), stringsAsFactors = FALSE)
+
+  df <- df %>%
+    arrange(desc(Release))
+
+  kable(df, format = "simple", align = "c", caption = "Available Data Releases")
+}
+
+
+list_release(urls)
 
 
 list_release <- function(urls) {
@@ -463,7 +485,22 @@ OpenAP <- R6::R6Class(
     url = NULL,
 
     initialize = function(release_year = NULL) {
-      release_url <- "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k"
+      
+      if (is.null(release_year)) {
+        # Default to the latest release
+        release_url <- urls[[names(urls)[length(urls)]]]
+      } else {
+        # Dynamically find the release URL based on release_year
+        release_key <- paste0("release", release_year, "_url")
+        release_url <- urls[[release_key]]
+        
+        if (is.null(release_url)) {
+          stop("Invalid release year provided.")
+        }
+      }
+      
+      # Store the selected URL
+      self$url <- release_url
       mappings <- get_name_id_map(release_url)
       self$name_id_map <- mappings$main
       self$individual_signal_id_map <- mappings$signals
@@ -504,7 +541,7 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
-    download_port = function(data_name, predictor = NULL) {
+    dl_port = function(data_name, predictor = NULL) {
         if (is.null(self$name_id_map)) {
             stop("name_id_map is not initialized.")
         }
@@ -631,4 +668,59 @@ print(unique(data$signalname))
 
 
 
+# specific year
+openap_instance2 = OpenAP$new(release_year = 2023)
+data <- openap_instance$download_port("deciles_ew")
 
+
+
+
+
+
+
+get_name_id_map("https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k")
+
+
+
+
+
+
+
+
+
+
+# Fallback:
+download_signal = function(predictor = NULL) {
+        # Step 1: Get URL
+        url <- self$get_url("firm_char")
+        #print(url)  # Debug: Verify the URL
+
+        # Step 2: Download file
+        temp_file <- tempfile()
+        download.file(url, temp_file, mode = "wb")
+        print(temp_file)  # Debug: Check the path of the temporary file
+
+        # Step 3: Process the file
+        # Use process_zip for ZIP files, otherwise attempt to read as CSV
+        con <- file(temp_file, "rb")
+        magic_bytes <- readBin(con, "raw", 4)
+        close(con)
+
+        if (all(magic_bytes[1:2] == charToRaw("PK"))) {
+            print("The file is a ZIP archive.")
+            data <- process_zip(temp_file)
+        } else {
+            print("The file is a plain CSV.")
+            data <- tryCatch(
+                read.csv(temp_file),
+                error = function(e) stop("Error reading CSV file: ", e$message)
+            )
+        }
+
+        # Step 4: Filter data by predictor if provided
+        if (!is.null(predictor)) {
+            data <- data[data$signalname %in% predictor, ]
+        }
+
+        return(data)
+    }

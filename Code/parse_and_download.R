@@ -410,6 +410,8 @@ list_release <- function(urls) {
 }
 
 
+
+
 process_zip <- function(zip_path) {
     # Temporary output directory
     output_dir <- tempdir()
@@ -445,6 +447,13 @@ OpenAP <- R6::R6Class(
     signal_sign = NULL,
     url = NULL,
 
+    #' Initialize the OpenAP Class
+    #'
+    #' Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
+    #' Loads mappings, individual signal IDs, and signal documentation.
+    #' @param release_year The release year to initialize (default: latest).
+    #' @examples
+    #' openap_instance <- OpenAP$new(release_year = 2023)
     initialize = function(release_year = NULL) {
       
       if (is.null(release_year)) {
@@ -462,21 +471,45 @@ OpenAP <- R6::R6Class(
       
       # Store the selected URL
       self$url <- release_url
+      
+      # Extract and process mappings
       mappings <- get_name_id_map(release_url)
       self$name_id_map <- mappings$main
-      self$individual_signal_id_map <- mappings$signals
       
+      self$individual_signal_id_map <- data.frame(
+        signal = sapply(mappings$signals$signal, function(x) {
+          sub(".*class=\\\"flip-entry-title\\\">(.*?)</div>.*", "\\1", x) %>%
+            sub("\\.csv$", "", .)
+        }),
+        file_id = sapply(mappings$signals$file_id, function(x) {
+          sub(".*?/d/([a-zA-Z0-9_-]+).*", "\\1", x)
+        }),
+        stringsAsFactors = FALSE
+      )
+
       # Process the signal documentation
       signal_doc_url <- self$get_url("signal_doc")
       self$signal_sign <- read.csv(signal_doc_url)
     },
 
+    #' List of Available Portfolios
+    #'
+    #' Prints a list of available portfolios in the release.
+    #' @examples
+    #' openap_instance$list_port()
     list_port = function() {
       print(self$name_id_map %>%
               dplyr::filter(stringr::str_starts(name, "Predictor")) %>%
               dplyr::select(name, download_name))
     },
 
+    #' Get Dataset URL
+    #'
+    #' Retrieves the URL for a specific dataset based on its name.
+    #' @param data_name The name of the Portfolio.
+    #' @return A URL string for the dataset.
+    #' @examples
+    #' openap_instance$get_url("nyse")
     get_url = function(data_name) {
       # Filter the dataset for matching download_name
       data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
@@ -502,6 +535,14 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
+    #' Download Portfolio Data
+    #'
+    #' Downloads portfolio data for a specified dataset and optionally filters by predictor.
+    #' @param data_name The name of the dataset.
+    #' @param predictor A vector of predictor names to filter (optional).
+    #' @return A data frame containing the portfolio data.
+    #' @examples
+    #' data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
     dl_port = function(data_name, predictor = NULL) {
         if (is.null(self$name_id_map)) {
             stop("name_id_map is not initialized.")
@@ -541,22 +582,57 @@ OpenAP <- R6::R6Class(
         return(data)
     },
 
-    dl_signal = function(predictor = NULL, signed = FALSE) {
-      # Ensure predictors are specified
+    #' Get Individual Signal URL
+    #'
+    #' Retrieves the URL for an individual signal based on its name.
+    #' @param signal_name The name of the signal to retrieve.
+    #' @return A string representing the URL of the signal.
+    #' @examples
+    #' url <- openap_instance$get_individual_signal_url("Accruals.csv")
+    get_individual_signal_url = function(signal_name) {
+      # Check if individual_signal_id_map exists
+      if (is.null(self$individual_signal_id_map)) {
+        stop("The individual_signal_id_map is not initialized.")
+      }
+      
+      # Filter for the specific signal
+      signal_entry <- self$individual_signal_id_map %>%
+        filter(signal == signal_name)
+      
+      if (nrow(signal_entry) == 0) {
+        stop(paste("Signal name", signal_name, "not found in individual_signal_id_map."))
+      }
+      
+      # Extract the file_id
+      url <- paste0("https://drive.google.com/uc?id=", signal_entry$file_id[1])
+      return(url)
+    },
+
+    #' Download specific Firm Level Characteristics
+    #'
+    #' Downloads specific firm  characteristics
+    #' @param predictor A vector of predictor names to download.
+    #' @param signed Logical; whether to apply signed transformation based on signal documentation.
+    #' @return A data frame containing the signal data.
+    #' @examples
+    #' signals <- openap_instance$dl_signal(predictor = c("BM"), signed = TRUE)
+    dl_signal = function(predictor = NULL) {
+      # Validate predictors
       if (is.null(predictor)) {
         stop("Predictor(s) must be specified.")
       }
 
-      # Initialize an empty data frame
-      df <- NULL
+      # Initialize an empty data frame for results
+      result <- data.frame()
 
-      # Iterate through predictors
-      for (signal in predictor) {
-        # Get URL for the individual signal
-        url <- self$get_individual_signal_url(signal)
+      # Process each predictor
+      for (signal_name in predictor) {
+        message(paste("Processing signal:", signal_name)) # Debug message
+
+        # Get the individual signal URL
+        url <- self$get_individual_signal_url(signal_name)
         if (is.null(url)) {
-          warning(paste("URL for signal", signal, "not found. Skipping."))
-          next
+          stop(paste("Could not retrieve URL for signal:", signal_name))
         }
 
         # Download the file
@@ -564,43 +640,28 @@ OpenAP <- R6::R6Class(
         download.file(url, temp_file, mode = "wb")
 
         # Read the file
-        con <- file(temp_file, "rb")
-        magic_bytes <- readBin(con, "raw", 4)
-        close(con)
-
-        if (all(magic_bytes[1:2] == charToRaw("PK"))) {
-          signal_data <- process_zip(temp_file)
-        } else {
-          signal_data <- tryCatch(
-            read.csv(temp_file),
-            error = function(e) stop(paste("Error reading data for signal:", signal, "-", e$message))
-          )
-        }
-
-        # Apply signed transformation if needed
-        if (signed) {
-          signal_sign <- self$signal_sign %>%
-            filter(.data$signal == signal) %>%
-            pull(sign)
-
-          if (!is.na(signal_sign)) {
-            signal_data <- signal_data %>%
-              mutate(!!signal := .data[[signal]] * signal_sign)
-          }
-        }
+        signal_data <- tryCatch(
+          read.csv(temp_file),
+          error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
+        )
 
         # Combine signal data
-        if (is.null(df)) {
-          df <- signal_data
+        if (nrow(result) == 0) {
+          result <- signal_data
         } else {
-          df <- full_join(df, signal_data, by = intersect(names(df), names(signal_data)))
+          result <- merge(result, signal_data, all = TRUE)
         }
       }
 
-      # Return the combined data frame
-      return(df)
+      return(result)
     },
 
+    #' Download all Firm Level Characteristics
+    #'
+    #' Downloads all firm level characteristics from the release folder.
+    #' @return A data frame containing all firm level characteristics.
+    #' @examples
+    #' signals_data <- openap_instance$dl_all_signals()
     dl_all_signals = function() {
       # Step 1: Get URL for the full 'firm_char' dataset
       url <- self$get_url("firm_char")
@@ -626,6 +687,12 @@ OpenAP <- R6::R6Class(
       return(data)
     }, 
     
+    #' Download Signal Documentation
+    #'
+    #' Downloads the signal documentation CSV for the release.
+    #' @return A data frame containing the signal documentation.
+    #' @examples
+    #' signal_doc <- openap_instance$dl_signal_doc()
     dl_signal_doc = function() {
       url <- self$get_url("signal_doc")
       data <- read.csv(url)
@@ -634,7 +701,6 @@ OpenAP <- R6::R6Class(
 
   )
 )
-
 
 
 # Examples (final package):
@@ -671,10 +737,12 @@ head(signals_data1)
 dim(signals_data1)
 
 # specific signals:
-signals2 <- openap_instance$dl_signal(predictor = c("BM"))
+openap_instance$get_individual_signal_url("SP")
+signals2 <- openap_instance$dl_signal(predictor = c("SP", "AM"))
 head(signals2)
 
 print(unique(data$signalname))
+
 
 
 # specific year 
@@ -682,7 +750,3 @@ openap_instance <- OpenAP$new(release_year = 2023)
 
 data2023 <- openap_instance$download_port("nyse")
 head(data2)
-
-
-
-

@@ -55,8 +55,11 @@ data8 <- openap_instance$dl_port("deciles_ew", predictor = c("BM", "Mom6m"))
 signals_data1 <- openap_instance$dl_all_signals()
 
 # Download specific firm characteristics
-data9openap_instance$dl_signal("BM")
+data9 <- openap_instance$dl_signal("BM")
 
 
-devtools::document()
-usethis::use_description()
+#devtools::document()
+#usethis::use_description()
+
+library(tidyfinance)
+download_data_wrds("wrds_crsp_msf")

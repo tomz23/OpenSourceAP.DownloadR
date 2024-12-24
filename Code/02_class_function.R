@@ -21,7 +21,9 @@ urls <- list(
   release2022_url   = "https://drive.google.com/drive/folders/1O18scg9iBTiBaDiQFhoGxdn4FdsbMqGo"
 )
 
-
+library(roxygen2)
+#' OpenAP Class
+#' @export
 OpenAP <- R6::R6Class(
   "OpenAP",
   public = list(

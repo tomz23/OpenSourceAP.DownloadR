@@ -24,17 +24,30 @@ urls <- list(
 library(roxygen2)
 
 
-#' OpenAP Class
+#' OpenAP Download
+#' 
+#' @description 
+#' A package to download data from the Open Source Asset Pricing (OpenAP) directly in R.  
+#' The package enables users to access two primary types of data:
 #'
-#' An R6 class to manage OpenAP functionality, including loading mappings,
-#' individual signal IDs, and signal documentation for a specified release year.
+#' 1. **Predictor Portfolio Returns**:  
+#'    - Access 212 cross-sectional predictors.  
+#'    - Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters, and more.  
 #'
-#' @field name_id_map A map of names to IDs.
-#' @field individual_signal_id_map A map of individual signal IDs.
-#' @field signal_sign The sign of the signal.
-#' @field url The base URL for OpenAP operations.
+#' 2. **Firm Characteristics**:  
+#'    - Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).  
+#'
+#'Learn more about OpenAP: [Data webside](https://openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | [Publication](https://www.nowpublishers.com/article/Details/CFR-0112)
+#' 
+#' @field name_id_map A mapping between names and their corresponding IDs in the OpenAP database.
+#' @field individual_signal_id_map A mapping of unique identifiers for individual signals.
+#' @field signal_sign The direction or "sign" of the signal (e.g., positive or negative).
+#' @field url The base URL for accessing OpenAP API endpoints.
+#' 
 #' @examples
+#' # Example: Initialize the OpenAP functionality for the 2023 release year
 #' openap_instance <- OpenAP$new(release_year = 2023)
+#' 
 OpenAP <- R6::R6Class(
   "OpenAP",
   public = list(
@@ -43,11 +56,12 @@ OpenAP <- R6::R6Class(
     signal_sign = NULL,
     url = NULL,
 
-    #' Initialize the OpenAP Class
-    #'
+    #' @description 
     #' Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
     #' Loads mappings, individual signal IDs, and signal documentation.
-    #' @param release_year The release year to initialize (default: latest).
+    #' 
+    #' @param release_year 
+    #' 
     #' @examples
     #' openap_instance <- OpenAP$new(release_year = 2023)
     initialize = function(release_year = NULL) {
@@ -88,9 +102,9 @@ OpenAP <- R6::R6Class(
       self$signal_sign <- read.csv(signal_doc_url)
     },
 
-    #' List of Available Portfolios
-    #'
-    #' Prints a list of available portfolios in the release.
+    #' @description
+    #' Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
+    #' 
     #' @examples
     #' openap_instance$list_port()
     list_port = function() {
@@ -99,11 +113,11 @@ OpenAP <- R6::R6Class(
               dplyr::select(name, download_name))
     },
 
-    #' Get Dataset URL
-    #'
+    #' @description 
     #' Retrieves the URL for a specific dataset based on its name.
+    #' 
     #' @param data_name The name of the Portfolio.
-    #' @return A URL string for the dataset.
+    #' 
     #' @examples
     #' openap_instance$get_url("nyse")
     get_url = function(data_name) {
@@ -131,12 +145,13 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
-    #' Download Portfolio Data
-    #'
-    #' Downloads portfolio data for a specified dataset and optionally filters by predictor.
-    #' @param data_name The name of the dataset.
+    #' @description 
+    #' Downloads portfolio data for a specified data set and optionally filters by predictor.
+    #' 
+    #' @param data_name The name of the data set.
+    #' 
     #' @param predictor A vector of predictor names to filter (optional).
-    #' @return A data frame containing the portfolio data.
+    #' 
     #' @examples
     #' data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
     dl_port = function(data_name, predictor = NULL) {
@@ -178,8 +193,7 @@ OpenAP <- R6::R6Class(
         return(data)
     },
 
-    #' Get Individual Signal URL
-    #'
+    #' @description 
     #' Retrieves the URL for an individual signal based on its name.
     #' @param signal_name The name of the signal to retrieve.
     #' @return A string representing the URL of the signal.
@@ -204,14 +218,16 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
-    #' Download specific Firm Level Characteristics
-    #'
+    #' @description 
     #' Downloads specific firm  characteristics
+    #' 
     #' @param predictor A vector of predictor names to download.
+    #' 
     #' @param signed Logical; whether to apply signed transformation based on signal documentation.
+    #' 
     #' @return A data frame containing the signal data.
     #' @examples
-    #' signals <- openap_instance$dl_signal(predictor = c("BM"), signed = TRUE)
+    #' signals <- openap_instance$dl_signal(predictor = c("BM"))
     dl_signal = function(predictor = NULL) {
       # Validate predictors
       if (is.null(predictor)) {
@@ -252,10 +268,11 @@ OpenAP <- R6::R6Class(
       return(result)
     },
 
-    #' Download all Firm Level Characteristics
-    #'
+    #' @description 
     #' Downloads all firm level characteristics from the release folder.
+    #' 
     #' @return A data frame containing all firm level characteristics.
+    #' 
     #' @examples
     #' signals_data <- openap_instance$dl_all_signals()
     dl_all_signals = function() {
@@ -283,8 +300,7 @@ OpenAP <- R6::R6Class(
       return(data)
     }, 
     
-    #' Download Signal Documentation
-    #'
+    #' @description 
     #' Downloads the signal documentation CSV for the release.
     #' @return A data frame containing the signal documentation.
     #' @examples

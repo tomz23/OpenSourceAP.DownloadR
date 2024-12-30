@@ -2,80 +2,70 @@
 % Please edit documentation in R/02_class_function.R
 \name{OpenAP}
 \alias{OpenAP}
-\title{OpenAP Class}
+\title{OpenAP Download}
 \description{
-An R6 class to manage OpenAP functionality, including loading mappings,
-individual signal IDs, and signal documentation for a specified release year.
+A package to download data from the Open Source Asset Pricing (OpenAP) directly in R.
+The package enables users to access two primary types of data:
+\enumerate{
+\item \strong{Predictor Portfolio Returns}:
+\itemize{
+\item Access 212 cross-sectional predictors.
+\item Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters, and more.
+}
+\item \strong{Firm Characteristics}:
+\itemize{
+\item Access 209 firm characteristics from OpenAP (+3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).
+}
+}
+
+Learn more about OpenAP: \href{https://openassetpricing.com}{Data webside} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
 }
 \examples{
+# Example: Initialize the OpenAP functionality for the 2023 release year
 openap_instance <- OpenAP$new(release_year = 2023)
-Initialize the OpenAP Class
 
-Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
-Loads mappings, individual signal IDs, and signal documentation.
 
 ## ------------------------------------------------
 ## Method `OpenAP$new`
 ## ------------------------------------------------
 
 openap_instance <- OpenAP$new(release_year = 2023)
-List of Available Portfolios
-
-Prints a list of available portfolios in the release.
 
 ## ------------------------------------------------
 ## Method `OpenAP$list_port`
 ## ------------------------------------------------
 
 openap_instance$list_port()
-Get Dataset URL
-
-Retrieves the URL for a specific dataset based on its name.
 
 ## ------------------------------------------------
 ## Method `OpenAP$get_url`
 ## ------------------------------------------------
 
 openap_instance$get_url("nyse")
-Download Portfolio Data
-
-Downloads portfolio data for a specified dataset and optionally filters by predictor.
 
 ## ------------------------------------------------
 ## Method `OpenAP$dl_port`
 ## ------------------------------------------------
 
 data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
-Get Individual Signal URL
-
-Retrieves the URL for an individual signal based on its name.
 
 ## ------------------------------------------------
 ## Method `OpenAP$get_individual_signal_url`
 ## ------------------------------------------------
 
 url <- openap_instance$get_individual_signal_url("Accruals.csv")
-Download specific Firm Level Characteristics
-
-Downloads specific firm  characteristics
 
 ## ------------------------------------------------
 ## Method `OpenAP$dl_signal`
 ## ------------------------------------------------
 
 signals <- openap_instance$dl_signal(predictor = c("BM"), signed = TRUE)
-Download all Firm Level Characteristics
-
-Downloads all firm level characteristics from the release folder.
 
 ## ------------------------------------------------
 ## Method `OpenAP$dl_all_signals`
 ## ------------------------------------------------
 
 signals_data <- openap_instance$dl_all_signals()
-Download Signal Documentation
-
-Downloads the signal documentation CSV for the release.
 
 ## ------------------------------------------------
 ## Method `OpenAP$dl_signal_doc`
@@ -86,13 +76,13 @@ signal_doc <- openap_instance$dl_signal_doc()
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
-\item{\code{name_id_map}}{A map of names to IDs.}
+\item{\code{name_id_map}}{A mapping between names and their corresponding IDs in the OpenAP database.}
 
-\item{\code{individual_signal_id_map}}{A map of individual signal IDs.}
+\item{\code{individual_signal_id_map}}{A mapping of unique identifiers for individual signals.}
 
-\item{\code{signal_sign}}{The sign of the signal.}
+\item{\code{signal_sign}}{The direction or "sign" of the signal (e.g., positive or negative).}
 
-\item{\code{url}}{The base URL for OpenAP operations.}
+\item{\code{url}}{The base URL for accessing OpenAP API endpoints.}
 }
 \if{html}{\out{</div>}}
 }
@@ -114,6 +104,8 @@ signal_doc <- openap_instance$dl_signal_doc()
 \if{html}{\out{<a id="method-OpenAP-new"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-new}{}}}
 \subsection{Method \code{new()}}{
+Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
+Loads mappings, individual signal IDs, and signal documentation.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$new(release_year = NULL)}\if{html}{\out{</div>}}
 }
@@ -121,16 +113,13 @@ signal_doc <- openap_instance$dl_signal_doc()
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{release_year}}{The release year to initialize (default: latest).}
+\item{\code{release_year}}{}
 }
 \if{html}{\out{</div>}}
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{openap_instance <- OpenAP$new(release_year = 2023)
-List of Available Portfolios
-
-Prints a list of available portfolios in the release.
 }
 \if{html}{\out{</div>}}
 
@@ -141,6 +130,7 @@ Prints a list of available portfolios in the release.
 \if{html}{\out{<a id="method-OpenAP-list_port"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-list_port}{}}}
 \subsection{Method \code{list_port()}}{
+Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$list_port()}\if{html}{\out{</div>}}
 }
@@ -148,9 +138,6 @@ Prints a list of available portfolios in the release.
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{openap_instance$list_port()
-Get Dataset URL
-
-Retrieves the URL for a specific dataset based on its name.
 }
 \if{html}{\out{</div>}}
 
@@ -161,6 +148,7 @@ Retrieves the URL for a specific dataset based on its name.
 \if{html}{\out{<a id="method-OpenAP-get_url"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-get_url}{}}}
 \subsection{Method \code{get_url()}}{
+Retrieves the URL for a specific dataset based on its name.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$get_url(data_name)}\if{html}{\out{</div>}}
 }
@@ -172,15 +160,9 @@ Retrieves the URL for a specific dataset based on its name.
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Returns}{
-A URL string for the dataset.
-}
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{openap_instance$get_url("nyse")
-Download Portfolio Data
-
-Downloads portfolio data for a specified dataset and optionally filters by predictor.
 }
 \if{html}{\out{</div>}}
 
@@ -191,6 +173,7 @@ Downloads portfolio data for a specified dataset and optionally filters by predi
 \if{html}{\out{<a id="method-OpenAP-dl_port"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_port}{}}}
 \subsection{Method \code{dl_port()}}{
+Downloads portfolio data for a specified data set and optionally filters by predictor.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_port(data_name, predictor = NULL)}\if{html}{\out{</div>}}
 }
@@ -198,21 +181,15 @@ Downloads portfolio data for a specified dataset and optionally filters by predi
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{data_name}}{The name of the dataset.}
+\item{\code{data_name}}{The name of the data set.}
 
 \item{\code{predictor}}{A vector of predictor names to filter (optional).}
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Returns}{
-A data frame containing the portfolio data.
-}
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
-Get Individual Signal URL
-
-Retrieves the URL for an individual signal based on its name.
 }
 \if{html}{\out{</div>}}
 
@@ -223,6 +200,7 @@ Retrieves the URL for an individual signal based on its name.
 \if{html}{\out{<a id="method-OpenAP-get_individual_signal_url"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-get_individual_signal_url}{}}}
 \subsection{Method \code{get_individual_signal_url()}}{
+Retrieves the URL for an individual signal based on its name.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$get_individual_signal_url(signal_name)}\if{html}{\out{</div>}}
 }
@@ -240,9 +218,6 @@ A string representing the URL of the signal.
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{url <- openap_instance$get_individual_signal_url("Accruals.csv")
-Download specific Firm Level Characteristics
-
-Downloads specific firm  characteristics
 }
 \if{html}{\out{</div>}}
 
@@ -253,6 +228,7 @@ Downloads specific firm  characteristics
 \if{html}{\out{<a id="method-OpenAP-dl_signal"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_signal}{}}}
 \subsection{Method \code{dl_signal()}}{
+Downloads specific firm  characteristics
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal(predictor = NULL)}\if{html}{\out{</div>}}
 }
@@ -272,9 +248,6 @@ A data frame containing the signal data.
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{signals <- openap_instance$dl_signal(predictor = c("BM"), signed = TRUE)
-Download all Firm Level Characteristics
-
-Downloads all firm level characteristics from the release folder.
 }
 \if{html}{\out{</div>}}
 
@@ -285,6 +258,7 @@ Downloads all firm level characteristics from the release folder.
 \if{html}{\out{<a id="method-OpenAP-dl_all_signals"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_all_signals}{}}}
 \subsection{Method \code{dl_all_signals()}}{
+Downloads all firm level characteristics from the release folder.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_all_signals()}\if{html}{\out{</div>}}
 }
@@ -295,9 +269,6 @@ A data frame containing all firm level characteristics.
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
 \preformatted{signals_data <- openap_instance$dl_all_signals()
-Download Signal Documentation
-
-Downloads the signal documentation CSV for the release.
 }
 \if{html}{\out{</div>}}
 
@@ -308,6 +279,7 @@ Downloads the signal documentation CSV for the release.
 \if{html}{\out{<a id="method-OpenAP-dl_signal_doc"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_signal_doc}{}}}
 \subsection{Method \code{dl_signal_doc()}}{
+Downloads the signal documentation CSV for the release.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal_doc()}\if{html}{\out{</div>}}
 }

@@ -58,8 +58,8 @@ signals_data1 <- openap_instance$dl_all_signals()
 data9 <- openap_instance$dl_signal("BM")
 
 
-#devtools::document()
-#usethis::use_description()
 
-library(tidyfinance)
-download_data_wrds("wrds_crsp_msf")
+
+
+
+

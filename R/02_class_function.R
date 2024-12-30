@@ -22,8 +22,19 @@ urls <- list(
 )
 
 library(roxygen2)
+
+
 #' OpenAP Class
-#' @export
+#'
+#' An R6 class to manage OpenAP functionality, including loading mappings,
+#' individual signal IDs, and signal documentation for a specified release year.
+#'
+#' @field name_id_map A map of names to IDs.
+#' @field individual_signal_id_map A map of individual signal IDs.
+#' @field signal_sign The sign of the signal.
+#' @field url The base URL for OpenAP operations.
+#' @examples
+#' openap_instance <- OpenAP$new(release_year = 2023)
 OpenAP <- R6::R6Class(
   "OpenAP",
   public = list(

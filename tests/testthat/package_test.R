@@ -2,7 +2,7 @@
 # Tests:
 ###########################
 
-devtools::install()
+#devtools::install()
 
 # initialize OpenAP
 openap_instance <- OpenAP$new(2022)

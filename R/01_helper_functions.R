@@ -34,7 +34,6 @@ library(rvest)
 library(jsonlite)
 library(stringr)
 
-
 parse_google_drive_file <- function(url, content) {
   # Parse HTML content 
   folder_soup <- read_html(content)

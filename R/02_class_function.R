@@ -22,7 +22,8 @@ urls <- list(
 )
 
 library(roxygen2)
-
+library(DBI)
+library(dplyr)
 
 #' OpenAP Download
 #' 
@@ -216,6 +217,41 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
+    dl_signal_crsp3 = function() {
+      connect <- dbConnect( 
+        RPostgres::Postgres(),
+        host = 'wrds-pgdata.wharton.upenn.edu',
+        port = 9737,
+        dbname = 'wrds',
+        sslmode = 'require',
+        user = Sys.getenv("WRDS_USER"),
+        pass = Sys.getenv("WRDS_PASS")
+      )
+
+      query <- "SELECT PERMNO, DATE, PRC, RET, SHROUT FROM CRSP.MSF"
+
+      crsp_data <- dbGetQuery(connect, query)
+
+      dbDisconnect(connect)
+
+      processed_data <- crsp_data  |> 
+        mutate(
+          yyyymm = as.integer(format(date, "%Y%m")),
+          Price = -log(abs(prc)),
+          Size = -log(abs(prc * shrout / 1000)),
+          STreversal = -coalesce(ret, 0)
+          )  |> 
+        select(permno, yyyymm, Price, Size, STreversal)  
+      
+      return(processed_data)
+    },
+
+    merge_crsp_with_signals = function(signals, crsp_data) {
+      merged_data <- signals  |> 
+      left_join(crsp_data, by = c("permno", "yyyymm"))
+    return(merged_data)
+    },
+
     #' @description 
     #' Downloads specific firm  characteristics
     #' 
@@ -263,7 +299,11 @@ OpenAP <- R6::R6Class(
         }
       }
 
-      return(result)
+    signals <- result
+    crsp_data <- self$dl_signal_crsp3()
+    signals <- self$merge_crsp_with_signals(signals, crsp_data)
+
+    return(signals)
     },
 
     #' @description 
@@ -295,7 +335,11 @@ OpenAP <- R6::R6Class(
         )
       }
 
-      return(data)
+    all_signals = data
+    crsp_data <- dl_signal_crsp3()
+    signals <- merge_crsp_with_signals(signals, crsp_data)
+      
+    return(signals)
     }, 
     
     #' @description 

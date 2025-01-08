@@ -63,4 +63,3 @@ signals_data1 <- openap_instance$dl_all_signals()
 
 # Download specific firm characteristics
 data9 <- openap_instance$dl_signal("BM")
-

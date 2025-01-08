@@ -14,16 +14,13 @@ The package enables users to access two primary types of data:
 }
 \item \strong{Firm Characteristics}:
 \itemize{
-\item Access 209 firm characteristics from OpenAP (+3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).
+\item Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).
 }
 }
 
 Learn more about OpenAP: \href{https://openassetpricing.com}{Data webside} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
 }
 \examples{
-# Example: Initialize the OpenAP functionality for the 2023 release year
-openap_instance <- OpenAP$new(release_year = 2023)
-
 
 ## ------------------------------------------------
 ## Method `OpenAP$new`
@@ -59,7 +56,7 @@ url <- openap_instance$get_individual_signal_url("Accruals.csv")
 ## Method `OpenAP$dl_signal`
 ## ------------------------------------------------
 
-signals <- openap_instance$dl_signal(predictor = c("BM"), signed = TRUE)
+signals <- openap_instance$dl_signal(predictor = c("BM"))
 
 ## ------------------------------------------------
 ## Method `OpenAP$dl_all_signals`
@@ -247,7 +244,7 @@ A data frame containing the signal data.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{signals <- openap_instance$dl_signal(predictor = c("BM"), signed = TRUE)
+\preformatted{signals <- openap_instance$dl_signal(predictor = c("BM"))
 }
 \if{html}{\out{</div>}}
 

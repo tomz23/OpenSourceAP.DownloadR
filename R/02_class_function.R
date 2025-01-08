@@ -44,10 +44,8 @@ library(roxygen2)
 #' @field signal_sign The direction or "sign" of the signal (e.g., positive or negative).
 #' @field url The base URL for accessing OpenAP API endpoints.
 #' 
-#' @examples
-#' # Example: Initialize the OpenAP functionality for the 2023 release year
-#' openap_instance <- OpenAP$new(release_year = 2023)
 #' 
+#' @export 
 OpenAP <- R6::R6Class(
   "OpenAP",
   public = list(

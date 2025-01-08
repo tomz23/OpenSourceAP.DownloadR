@@ -2,7 +2,13 @@
 # Tests:
 ###########################
 
-#devtools::install()
+# Installing the package
+devtools::install()
+#devtools::build()
+
+library(OpenSourceAP.DownloadR)
+# documentation
+?OpenAP
 
 # initialize OpenAP
 openap_instance <- OpenAP$new(2022)
@@ -57,10 +63,4 @@ signals_data1 <- openap_instance$dl_all_signals()
 
 # Download specific firm characteristics
 data9 <- openap_instance$dl_signal("BM")
-
-
-
-
-
-
 

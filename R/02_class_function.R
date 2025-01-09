@@ -252,6 +252,25 @@ OpenAP <- R6::R6Class(
     return(merged_data)
     },
 
+    apply_sign_logic = function(data, predictors, signal_sign, signed = TRUE) {
+      if (!signed) {
+        # Check for CRSP signals and apply transformation
+        crsp_signals <- c("Price", "Size", "STreversal")
+        for (signal in predictors) {
+          if (signal %in% crsp_signals) {
+            data[[signal]] <- -data[[signal]]
+          } else {
+            # Apply the sign from signal_sign
+            signal_row <- signal_sign[signal_sign$Acronym == signal, ]
+            if (nrow(signal_row) > 0 && !is.na(signal_row$Sign)) {
+              data[[signal]] <- data[[signal]] * signal_row$Sign
+            }
+          }
+        }
+      }
+      return(data)
+    },
+
     #' @description 
     #' Downloads specific firm  characteristics
     #' 
@@ -262,36 +281,32 @@ OpenAP <- R6::R6Class(
     #' @return A data frame containing the signal data.
     #' @examples
     #' signals <- openap_instance$dl_signal(predictor = c("BM"))
-    dl_signal = function(predictor = NULL) {
-      # Validate predictors
+    dl_signal = function(predictor = NULL, signed = TRUE) {
       if (is.null(predictor)) {
         stop("Predictor(s) must be specified.")
       }
 
-      # Initialize an empty data frame for results
+      crsp_signals <- c("Price", "Size", "STreversal")
+      all_predictors <- unique(c(crsp_signals, predictor))
       result <- data.frame()
 
-      # Process each predictor
-      for (signal_name in predictor) {
-        message(paste("Processing signal:", signal_name)) # Debug message
+      for (signal_name in all_predictors) {
+        if (signal_name %in% crsp_signals) {
+          next
+        }
 
-        # Get the individual signal URL
         url <- self$get_individual_signal_url(signal_name)
         if (is.null(url)) {
           stop(paste("Could not retrieve URL for signal:", signal_name))
         }
 
-        # Download the file
         temp_file <- tempfile()
         download.file(url, temp_file, mode = "wb")
-
-        # Read the file
         signal_data <- tryCatch(
           read.csv(temp_file),
           error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
         )
 
-        # Combine signal data
         if (nrow(result) == 0) {
           result <- signal_data
         } else {
@@ -299,11 +314,11 @@ OpenAP <- R6::R6Class(
         }
       }
 
-    signals <- result
-    crsp_data <- self$dl_signal_crsp3()
-    signals <- self$merge_crsp_with_signals(signals, crsp_data)
+      crsp_data <- self$dl_signal_crsp3()
+      signals <- self$merge_crsp_with_signals(result, crsp_data)
+      signals <- self$apply_sign_logic(signals, all_predictors, self$signal_sign, signed)
 
-    return(signals)
+      return(signals)
     },
 
     #' @description 
@@ -313,15 +328,11 @@ OpenAP <- R6::R6Class(
     #' 
     #' @examples
     #' signals_data <- openap_instance$dl_all_signals()
-    dl_all_signals = function() {
-      # Step 1: Get URL for the full 'firm_char' dataset
+    dl_all_signals = function(signed = FALSE) {
       url <- self$get_url("firm_char")
-      
-      # Step 2: Download the file
       temp_file <- tempfile()
       download.file(url, temp_file, mode = "wb")
 
-      # Step 3: Process the file
       con <- file(temp_file, "rb")
       magic_bytes <- readBin(con, "raw", 4)
       close(con)
@@ -335,12 +346,13 @@ OpenAP <- R6::R6Class(
         )
       }
 
-    all_signals = data
-    crsp_data <- dl_signal_crsp3()
-    signals <- merge_crsp_with_signals(signals, crsp_data)
-      
-    return(signals)
-    }, 
+      crsp_data <- self$dl_signal_crsp3()
+      all_signals <- self$merge_crsp_with_signals(data, crsp_data)
+      all_predictors <- unique(c("Price", "Size", "STreversal", colnames(data)))
+      all_signals <- self$apply_sign_logic(all_signals, all_predictors, self$signal_sign, signed)
+
+      return(all_signals)
+    },
     
     #' @description 
     #' Downloads the signal documentation CSV for the release.

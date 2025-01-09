@@ -61,5 +61,9 @@ data8 <- openap_instance$dl_port("deciles_ew", predictor = c("BM", "Mom6m"))
 # Download all firm characteristics
 signals_data1 <- openap_instance$dl_all_signals()
 
-# Download specific firm characteristics
-data9 <- openap_instance$dl_signal("BM")
+# Download specific firm characteristics and signed/not signed
+data9 <- openap_instance$dl_signal("Accruals")
+data10 <- openap_instance$dl_signal("Accruals", signed = FALSE)
+
+data11 <- openap_instance$dl_signal("BM")
+data12 <- openap_instance$dl_signal("BM", signed = FALSE)

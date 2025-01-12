@@ -28,12 +28,12 @@ library(dplyr)
 #' OpenAP Download
 #' 
 #' @description 
-#' A package to download data from the Open Source Asset Pricing (OpenAP) directly in R.  
+#' A package that allows to download data from the Open Source Asset Pricing (OpenAP) directly in R.  
 #' The package enables users to access two primary types of data:
 #'
 #' 1. **Predictor Portfolio Returns**:  
 #'    - Access 212 cross-sectional predictors.  
-#'    - Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters, and more.  
+#'    - Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters and more.  
 #'
 #' 2. **Firm Characteristics**:  
 #'    - Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).  
@@ -42,8 +42,8 @@ library(dplyr)
 #' 
 #' @field name_id_map A mapping between names and their corresponding IDs in the OpenAP database.
 #' @field individual_signal_id_map A mapping of unique identifiers for individual signals.
-#' @field signal_sign The direction or "sign" of the signal (e.g., positive or negative).
-#' @field url The base URL for accessing OpenAP API endpoints.
+#' @field signal_sign The direction or "sign" of the signal (i.e. positive or negative).
+#' @field url The base URL for downloading OpenAP data.
 #' 
 #' 
 #' @export 
@@ -57,7 +57,7 @@ OpenAP <- R6::R6Class(
 
     #' @description 
     #' Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
-    #' Loads mappings, individual signal IDs, and signal documentation.
+    #' Loads mappings, individual signal IDs and signal documentation.
     #' 
     #' @param release_year 
     #' 
@@ -272,7 +272,7 @@ OpenAP <- R6::R6Class(
     },
 
     #' @description 
-    #' Downloads specific firm  characteristics
+    #' Downloads specific firm characteristics.
     #' 
     #' @param predictor A vector of predictor names to download.
     #' 

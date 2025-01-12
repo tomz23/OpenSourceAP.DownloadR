@@ -4,13 +4,13 @@
 \alias{OpenAP}
 \title{OpenAP Download}
 \description{
-A package to download data from the Open Source Asset Pricing (OpenAP) directly in R.
+A package that allows to download data from the Open Source Asset Pricing (OpenAP) directly in R.
 The package enables users to access two primary types of data:
 \enumerate{
 \item \strong{Predictor Portfolio Returns}:
 \itemize{
 \item Access 212 cross-sectional predictors.
-\item Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters, and more.
+\item Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters and more.
 }
 \item \strong{Firm Characteristics}:
 \itemize{
@@ -77,9 +77,9 @@ signal_doc <- openap_instance$dl_signal_doc()
 
 \item{\code{individual_signal_id_map}}{A mapping of unique identifiers for individual signals.}
 
-\item{\code{signal_sign}}{The direction or "sign" of the signal (e.g., positive or negative).}
+\item{\code{signal_sign}}{The direction or "sign" of the signal (i.e. positive or negative).}
 
-\item{\code{url}}{The base URL for accessing OpenAP API endpoints.}
+\item{\code{url}}{The base URL for downloading OpenAP data.}
 }
 \if{html}{\out{</div>}}
 }
@@ -91,6 +91,9 @@ signal_doc <- openap_instance$dl_signal_doc()
 \item \href{#method-OpenAP-get_url}{\code{OpenAP$get_url()}}
 \item \href{#method-OpenAP-dl_port}{\code{OpenAP$dl_port()}}
 \item \href{#method-OpenAP-get_individual_signal_url}{\code{OpenAP$get_individual_signal_url()}}
+\item \href{#method-OpenAP-dl_signal_crsp3}{\code{OpenAP$dl_signal_crsp3()}}
+\item \href{#method-OpenAP-merge_crsp_with_signals}{\code{OpenAP$merge_crsp_with_signals()}}
+\item \href{#method-OpenAP-apply_sign_logic}{\code{OpenAP$apply_sign_logic()}}
 \item \href{#method-OpenAP-dl_signal}{\code{OpenAP$dl_signal()}}
 \item \href{#method-OpenAP-dl_all_signals}{\code{OpenAP$dl_all_signals()}}
 \item \href{#method-OpenAP-dl_signal_doc}{\code{OpenAP$dl_signal_doc()}}
@@ -102,7 +105,7 @@ signal_doc <- openap_instance$dl_signal_doc()
 \if{latex}{\out{\hypertarget{method-OpenAP-new}{}}}
 \subsection{Method \code{new()}}{
 Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
-Loads mappings, individual signal IDs, and signal documentation.
+Loads mappings, individual signal IDs and signal documentation.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$new(release_year = NULL)}\if{html}{\out{</div>}}
 }
@@ -222,12 +225,39 @@ A string representing the URL of the signal.
 
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-OpenAP-dl_signal_crsp3"></a>}}
+\if{latex}{\out{\hypertarget{method-OpenAP-dl_signal_crsp3}{}}}
+\subsection{Method \code{dl_signal_crsp3()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal_crsp3()}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-OpenAP-merge_crsp_with_signals"></a>}}
+\if{latex}{\out{\hypertarget{method-OpenAP-merge_crsp_with_signals}{}}}
+\subsection{Method \code{merge_crsp_with_signals()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$merge_crsp_with_signals(signals, crsp_data)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-OpenAP-apply_sign_logic"></a>}}
+\if{latex}{\out{\hypertarget{method-OpenAP-apply_sign_logic}{}}}
+\subsection{Method \code{apply_sign_logic()}}{
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$apply_sign_logic(data, predictors, signal_sign, signed = TRUE)}\if{html}{\out{</div>}}
+}
+
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_signal"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_signal}{}}}
 \subsection{Method \code{dl_signal()}}{
-Downloads specific firm  characteristics
+Downloads specific firm  characteristics.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal(predictor = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal(predictor = NULL, signed = TRUE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -257,7 +287,7 @@ A data frame containing the signal data.
 \subsection{Method \code{dl_all_signals()}}{
 Downloads all firm level characteristics from the release folder.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_all_signals()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_all_signals(signed = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Returns}{

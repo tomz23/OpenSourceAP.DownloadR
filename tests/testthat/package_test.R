@@ -11,8 +11,8 @@ library(OpenSourceAP.DownloadR)
 ?OpenAP
 
 # initialize OpenAP
-openap_instance <- OpenAP$new(2022)
-#openap_instance <- OpenAP$new(release_year = 2023)
+openap_instance <- OpenAP$new("2024_10")
+#openap_instance <- OpenAP$new(release_year = "2024_10")
 
 # ==========
 # list available datasets:
@@ -24,7 +24,6 @@ openap_instance$list_port()
 # Download SignalDoc.csv 
 # ==========
 signal_doc = openap_instance$dl_signal_doc()
-
 
 # ==========
 # Portfolios -> Full Sets OP -> PredictorPortsFull.csv

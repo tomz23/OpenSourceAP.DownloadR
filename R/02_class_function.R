@@ -1,25 +1,39 @@
 
 list_release <- function(urls) {
-  releases <- sapply(names(urls), function(x) {
-    if (grepl("^release\\d+_url$", x)) {
-      sub("release(\\d+)_url", "\\1", x)
-    } else {
-      NA
+  releases <- lapply(names(urls), function(x) {
+    # Expect keys of the form "release_<release_id>_url"
+    m <- regmatches(x, regexec("^release_(.+)_url$", x))[[1]]
+    if (length(m) > 0) {
+      release_id <- m[2]  # e.g. "2024_08" or "2023"
+      # Try to parse a numeric year and month from the release_id:
+      if (grepl("_", release_id)) {
+        parts <- strsplit(release_id, "_")[[1]]
+        year <- as.numeric(parts[1])
+        month <- as.numeric(parts[2])
+      } else {
+        year <- as.numeric(release_id)
+        month <- 0
+      }
+      return(data.frame(full_release = release_id, year = year, month = month, 
+                        stringsAsFactors = FALSE))
     }
+    NULL
   })
-  releases <- na.omit(releases)
+  releases <- do.call(rbind, releases)
   
-  # Print releases in a tabular format
-  print(data.frame(Release = releases))
+  # Sort releases in descending order (latest first)
+  releases <- releases[order(-releases$year, -releases$month), ]
+  print(releases)
+  return(releases)
 }
 
-
 urls <- list(
-  release202410_url = "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k",
-  release202408_url = "https://drive.google.com/drive/folders/1-PqsR-tOjv3-U9DRHw85X-VznYlu-Sfc",
-  release2023_url   = "https://drive.google.com/drive/folders/1EP6oEabyZRamveGNyzYU0u6qJ-N43Qfq",
-  release2022_url   = "https://drive.google.com/drive/folders/1O18scg9iBTiBaDiQFhoGxdn4FdsbMqGo"
+  release_2024_10_url = "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k",
+  release_2024_08_url = "https://drive.google.com/drive/folders/1-PqsR-tOjv3-U9DRHw85X-VznYlu-Sfc",
+  release_2023_url    = "https://drive.google.com/drive/folders/1EP6oEabyZRamveGNyzYU0u6qJ-N43Qfq",
+  release_2022_url    = "https://drive.google.com/drive/folders/1O18scg9iBTiBaDiQFhoGxdn4FdsbMqGo"
 )
+
 
 library(roxygen2)
 library(DBI)
@@ -64,20 +78,33 @@ OpenAP <- R6::R6Class(
     #' @examples
     #' openap_instance <- OpenAP$new(release_year = 2023)
     initialize = function(release_year = NULL) {
+      # Get the list of available releases (with identifiers like "2024_08", "2023", etc.)
+      releases <- list_release(urls)
       
       if (is.null(release_year)) {
-        # Default to the latest release
-        release_url <- urls[[names(urls)[length(urls)]]]
+        # Default to the latest release (first row in the sorted data frame)
+        selected <- releases[1, ]
+        message("No release specified. Defaulting to latest release: ", 
+                selected$full_release)
       } else {
-        # Dynamically find the release URL based on release_year
-        release_key <- paste0("release", release_year, "_url")
-        release_url <- urls[[release_key]]
-        
-        if (is.null(release_url)) {
-          stop("Invalid release year provided.")
+        # Allow the user to pass a string like "2024_08" or a numeric value like 2022.
+        # If a numeric value is provided, convert it to character.
+        if (is.numeric(release_year)) {
+          release_year <- as.character(release_year)
         }
+        candidate <- releases[releases$full_release == release_year, ]
+        if (nrow(candidate) == 0) {
+          stop("Invalid release identifier provided. Please use one of: ",
+              paste(releases$full_release, collapse = ", "))
+        }
+        selected <- candidate[1, ]
+        message("Selected release: ", selected$full_release)
       }
       
+      # Build the key to extract the URL from the urls list
+      release_key <- paste0("release_", selected$full_release, "_url")
+      release_url <- urls[[release_key]]
+            
       # Store the selected URL
       self$url <- release_url
       

@@ -14,13 +14,13 @@ list_release <- function(urls) {
         year <- as.numeric(release_id)
         month <- 0
       }
-      return(data.frame(full_release = release_id, year = year, month = month, 
+      return(data.frame(full_release = release_id, year = year, month = month,
                         stringsAsFactors = FALSE))
     }
     NULL
   })
   releases <- do.call(rbind, releases)
-  
+
   # Sort releases in descending order (latest first)
   releases <- releases[order(-releases$year, -releases$month), ]
   print(releases)
@@ -40,27 +40,27 @@ library(DBI)
 library(dplyr)
 
 #' OpenAP Download
-#' 
-#' @description 
-#' A package that allows to download data from the Open Source Asset Pricing (OpenAP) directly in R.  
+#'
+#' @description
+#' A package that allows to download data from the Open Source Asset Pricing (OpenAP) directly in R.
 #' The package enables users to access two primary types of data:
 #'
-#' 1. **Predictor Portfolio Returns**:  
-#'    - Access 212 cross-sectional predictors.  
-#'    - Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters and more.  
+#' 1. **Predictor Portfolio Returns**:
+#'    - Access 212 cross-sectional predictors.
+#'    - Download portfolio returns using various portfolio construction methods, including original paper methods, deciles, quintiles, equal-weighted, value-weighted, price filters and more.
 #'
-#' 2. **Firm Characteristics**:  
-#'    - Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).  
+#' 2. **Firm Characteristics**:
+#'    - Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).
 #'
 #'Learn more about OpenAP: [Data webside](https://openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | [Publication](https://www.nowpublishers.com/article/Details/CFR-0112)
-#' 
+#'
 #' @field name_id_map A mapping between names and their corresponding IDs in the OpenAP database.
 #' @field individual_signal_id_map A mapping of unique identifiers for individual signals.
 #' @field signal_sign The direction or "sign" of the signal (i.e. positive or negative).
 #' @field url The base URL for downloading OpenAP data.
-#' 
-#' 
-#' @export 
+#'
+#'
+#' @export
 OpenAP <- R6::R6Class(
   "OpenAP",
   public = list(
@@ -69,22 +69,22 @@ OpenAP <- R6::R6Class(
     signal_sign = NULL,
     url = NULL,
 
-    #' @description 
+    #' @description
     #' Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
     #' Loads mappings, individual signal IDs and signal documentation.
-    #' 
-    #' @param release_year 
-    #' 
+    #'
+    #' @param release_year
+    #'
     #' @examples
     #' openap_instance <- OpenAP$new(release_year = 2023)
     initialize = function(release_year = NULL) {
       # Get the list of available releases (with identifiers like "2024_08", "2023", etc.)
       releases <- list_release(urls)
-      
+
       if (is.null(release_year)) {
         # Default to the latest release (first row in the sorted data frame)
         selected <- releases[1, ]
-        message("No release specified. Defaulting to latest release: ", 
+        message("No release specified. Defaulting to latest release: ",
                 selected$full_release)
       } else {
         # Allow the user to pass a string like "2024_08" or a numeric value like 2022.
@@ -100,18 +100,18 @@ OpenAP <- R6::R6Class(
         selected <- candidate[1, ]
         message("Selected release: ", selected$full_release)
       }
-      
+
       # Build the key to extract the URL from the urls list
       release_key <- paste0("release_", selected$full_release, "_url")
       release_url <- urls[[release_key]]
-            
+
       # Store the selected URL
       self$url <- release_url
-      
+
       # Extract and process mappings
       mappings <- get_name_id_map(release_url)
       self$name_id_map <- mappings$main
-      
+
       self$individual_signal_id_map <- data.frame(
         signal = sapply(mappings$signals$signal, function(x) {
           sub(".*class=\\\"flip-entry-title\\\">(.*?)</div>.*", "\\1", x) %>%
@@ -130,7 +130,7 @@ OpenAP <- R6::R6Class(
 
     #' @description
     #' Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
-    #' 
+    #'
     #' @examples
     #' openap_instance$list_port()
     list_port = function() {
@@ -139,24 +139,24 @@ OpenAP <- R6::R6Class(
               dplyr::select(name, download_name))
     },
 
-    #' @description 
+    #' @description
     #' Retrieves the URL for a specific dataset based on its name.
-    #' 
+    #'
     #' @param data_name The name of the Portfolio.
-    #' 
+    #'
     #' @examples
     #' openap_instance$get_url("nyse")
     get_url = function(data_name) {
       # Filter the dataset for matching download_name
       data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
-      
+
       # Check if no matching entry exists
       if (nrow(data_entry) == 0) {
         stop("Dataset not found in name_id_map.")
       }
-      
+
       # Extract the URL
-      url <- data_entry$file_id[1] 
+      url <- data_entry$file_id[1]
 
       # Handle special cases for files that need confirmation
       file_with_confirm <- c("firm_char", "deciles_ew", "deciles_vw")
@@ -167,17 +167,17 @@ OpenAP <- R6::R6Class(
           stop("get_readable_link function is not implemented.")
         }
       }
-      
+
       return(url)
     },
 
-    #' @description 
+    #' @description
     #' Downloads portfolio data for a specified data set and optionally filters by predictor.
-    #' 
+    #'
     #' @param data_name The name of the data set.
-    #' 
+    #'
     #' @param predictor A vector of predictor names to filter (optional).
-    #' 
+    #'
     #' @examples
     #' data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
     dl_port = function(data_name, predictor = NULL) {
@@ -215,11 +215,14 @@ OpenAP <- R6::R6Class(
         }
 
         # Order the data
-        data <- data[order(data$signalname, data$port, data$date), ]
+        data <- data[order(data$signalname, data$port, data$date), ] %>%
+          # make sure data are in tibble format and date correctly formatted
+          mutate(date = lubridate::ymd(date)) %>%
+          tibble()
         return(data)
     },
 
-    #' @description 
+    #' @description
     #' Retrieves the URL for an individual signal based on its name.
     #' @param signal_name The name of the signal to retrieve.
     #' @return A string representing the URL of the signal.
@@ -230,22 +233,22 @@ OpenAP <- R6::R6Class(
       if (is.null(self$individual_signal_id_map)) {
         stop("The individual_signal_id_map is not initialized.")
       }
-      
+
       # Filter for the specific signal
       signal_entry <- self$individual_signal_id_map %>%
         filter(signal == signal_name)
-      
+
       if (nrow(signal_entry) == 0) {
         stop(paste("Signal name", signal_name, "not found in individual_signal_id_map."))
       }
-      
+
       # Extract the file_id
       url <- paste0("https://drive.google.com/uc?id=", signal_entry$file_id[1])
       return(url)
     },
 
     dl_signal_crsp3 = function() {
-      connect <- dbConnect( 
+      connect <- dbConnect(
         RPostgres::Postgres(),
         host = 'wrds-pgdata.wharton.upenn.edu',
         port = 9737,
@@ -261,20 +264,20 @@ OpenAP <- R6::R6Class(
 
       dbDisconnect(connect)
 
-      processed_data <- crsp_data  |> 
+      processed_data <- crsp_data  |>
         mutate(
           yyyymm = as.integer(format(date, "%Y%m")),
           Price = -log(abs(prc)),
           Size = -log(abs(prc * shrout / 1000)),
           STreversal = -coalesce(ret, 0)
-          )  |> 
-        select(permno, yyyymm, Price, Size, STreversal)  
-      
+          )  |>
+        select(permno, yyyymm, Price, Size, STreversal)
+
       return(processed_data)
     },
 
     merge_crsp_with_signals = function(signals, crsp_data) {
-      merged_data <- signals  |> 
+      merged_data <- signals  |>
       left_join(crsp_data, by = c("permno", "yyyymm"))
     return(merged_data)
     },
@@ -298,13 +301,13 @@ OpenAP <- R6::R6Class(
       return(data)
     },
 
-    #' @description 
+    #' @description
     #' Downloads specific firm characteristics.
-    #' 
+    #'
     #' @param predictor A vector of predictor names to download.
-    #' 
+    #'
     #' @param signed Logical; whether to apply signed transformation based on signal documentation.
-    #' 
+    #'
     #' @return A data frame containing the signal data.
     #' @examples
     #' signals <- openap_instance$dl_signal(predictor = c("BM"))
@@ -348,11 +351,11 @@ OpenAP <- R6::R6Class(
       return(signals)
     },
 
-    #' @description 
+    #' @description
     #' Downloads all firm level characteristics from the release folder.
-    #' 
+    #'
     #' @return A data frame containing all firm level characteristics.
-    #' 
+    #'
     #' @examples
     #' signals_data <- openap_instance$dl_all_signals()
     dl_all_signals = function(signed = FALSE) {
@@ -380,8 +383,8 @@ OpenAP <- R6::R6Class(
 
       return(all_signals)
     },
-    
-    #' @description 
+
+    #' @description
     #' Downloads the signal documentation CSV for the release.
     #' @return A data frame containing the signal documentation.
     #' @examples

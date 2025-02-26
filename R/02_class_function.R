@@ -14,7 +14,7 @@ list_release <- function(urls) {
         year <- as.numeric(release_id)
         month <- 0
       }
-      return(data.frame(full_release = release_id, year = year, month = month, 
+      return(data.frame(release_id = release_id, year = year, month = month, 
                         stringsAsFactors = FALSE))
     }
     NULL
@@ -85,24 +85,24 @@ OpenAP <- R6::R6Class(
         # Default to the latest release (first row in the sorted data frame)
         selected <- releases[1, ]
         message("No release specified. Defaulting to latest release: ", 
-                selected$full_release)
+                selected$release_id)
       } else {
         # Allow the user to pass a string like "2024_08" or a numeric value like 2022.
         # If a numeric value is provided, convert it to character.
         if (is.numeric(release_year)) {
           release_year <- as.character(release_year)
         }
-        candidate <- releases[releases$full_release == release_year, ]
+        candidate <- releases[releases$release_id == release_year, ]
         if (nrow(candidate) == 0) {
           stop("Invalid release identifier provided. Please use one of: ",
-              paste(releases$full_release, collapse = ", "))
+              paste(releases$release_id, collapse = ", "))
         }
         selected <- candidate[1, ]
-        message("Selected release: ", selected$full_release)
+        message("Selected release: ", selected$release_id)
       }
       
       # Build the key to extract the URL from the urls list
-      release_key <- paste0("release_", selected$full_release, "_url")
+      release_key <- paste0("release_", selected$release_id, "_url")
       release_url <- urls[[release_key]]
             
       # Store the selected URL
@@ -215,7 +215,10 @@ OpenAP <- R6::R6Class(
         }
 
         # Order the data
-        data <- data[order(data$signalname, data$port, data$date), ]
+        data <- data[order(data$signalname, data$port, data$date), ] %>%
+          # make sure data are in tibble format and date correctly formatted
+          mutate(date = lubridate::ymd(date)) %>%
+          tibble()
         return(data)
     },
 
@@ -244,7 +247,7 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
-    dl_signal_crsp3 = function() {
+    dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
       connect <- dbConnect( 
         RPostgres::Postgres(),
         host = 'wrds-pgdata.wharton.upenn.edu',
@@ -256,9 +259,7 @@ OpenAP <- R6::R6Class(
       )
 
       query <- "SELECT PERMNO, DATE, PRC, RET, SHROUT FROM CRSP.MSF"
-
       crsp_data <- dbGetQuery(connect, query)
-
       dbDisconnect(connect)
 
       processed_data <- crsp_data  |> 
@@ -267,14 +268,15 @@ OpenAP <- R6::R6Class(
           Price = -log(abs(prc)),
           Size = -log(abs(prc * shrout / 1000)),
           STreversal = -coalesce(ret, 0)
-          )  |> 
-        select(permno, yyyymm, Price, Size, STreversal)  
-      
+        ) |> 
+      select(permno, yyyymm, all_of(requested_crsp_signals))  
+
       return(processed_data)
     },
 
-    merge_crsp_with_signals = function(signals, crsp_data) {
-      merged_data <- signals  |> 
+    merge_crsp_with_signals = function(signals, crsp_data, requested_crsp_signals) {
+      crsp_data <- crsp_data[, c("permno", "yyyymm", requested_crsp_signals), drop = FALSE]  # Only merge needed columns
+      merged_data <- signals |> 
       left_join(crsp_data, by = c("permno", "yyyymm"))
     return(merged_data)
     },
@@ -314,14 +316,14 @@ OpenAP <- R6::R6Class(
       }
 
       crsp_signals <- c("Price", "Size", "STreversal")
-      all_predictors <- unique(c(crsp_signals, predictor))
+
+      # Identify which predictors are OpenAP signals vs. CRSP signals
+      requested_crsp_signals <- intersect(crsp_signals, predictor)
+      requested_predictors <- setdiff(predictor, crsp_signals) 
       result <- data.frame()
 
-      for (signal_name in all_predictors) {
-        if (signal_name %in% crsp_signals) {
-          next
-        }
-
+      # Download only non-WRDS signals (from OpenAP)
+      for (signal_name in requested_predictors) {
         url <- self$get_individual_signal_url(signal_name)
         if (is.null(url)) {
           stop(paste("Could not retrieve URL for signal:", signal_name))
@@ -341,11 +343,17 @@ OpenAP <- R6::R6Class(
         }
       }
 
-      crsp_data <- self$dl_signal_crsp3()
-      signals <- self$merge_crsp_with_signals(result, crsp_data)
-      signals <- self$apply_sign_logic(signals, all_predictors, self$signal_sign, signed)
+      # Download and merge only requested CRSP signals
+      if (length(requested_crsp_signals) > 0) {
+        crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
+        result <- self$merge_crsp_with_signals(result, crsp_data, requested_crsp_signals)
+      }
 
-      return(signals)
+      # Apply sign logic only to requested signals
+      all_signals <- unique(c(requested_predictors, requested_crsp_signals))
+      result <- self$apply_sign_logic(result, all_signals, self$signal_sign, signed)
+
+      return(result)
     },
 
     #' @description 

@@ -11,7 +11,8 @@ library(OpenSourceAP.DownloadR)
 ?OpenAP
 
 # initialize OpenAP
-openap_instance <- OpenAP$new("2024_10")
+openap_instance <- OpenAP$new()
+#openap_instance <- OpenAP$new("2024_10")
 #openap_instance <- OpenAP$new(release_year = "2024_10")
 
 # ==========
@@ -66,3 +67,7 @@ data10 <- openap_instance$dl_signal("Accruals", signed = FALSE)
 
 data11 <- openap_instance$dl_signal("BM")
 data12 <- openap_instance$dl_signal("BM", signed = FALSE)
+
+# Dowload specific firm characteristics with WRDS connection
+data13 <- openap_instance$dl_signal(c("Accruals", "STreversal"))
+data14 <- openap_instance$dl_signal(c("Accruals", "STreversal"), signed = FALSE)

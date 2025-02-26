@@ -59,6 +59,7 @@ data8 <- openap_instance$dl_port("deciles_ew", predictor = c("BM", "Mom6m"))
 # ==========
 
 # Download all firm characteristics
+# Sys.setenv(WRDS_USER = "XXX", WRDS_PASS = "XXX")
 signals_data1 <- openap_instance$dl_all_signals()
 
 # Download specific firm characteristics and signed/not signed

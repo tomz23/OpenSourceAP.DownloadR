@@ -252,14 +252,26 @@ OpenAP <- R6::R6Class(
     },
 
     dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
+
+      # Checking whether wrds access is saved in environment variables, if not prompt:
+      if (Sys.getenv("WRDS_USER") == '' | Sys.getenv("WRDS_PASS") == '') {
+        message("WRDS credentials not found. To avoid entering them each time, please save them as environment variables WRDS_USER and WRDS_PASS.
+                Still, you might have to log in to the website first, to go through 2FA once.")
+        user = getPass::getPass("Enter your WRDS username:")
+        pass = getPass::getPass("Enter your WRDS password:")
+      } else {
+        user = Sys.getenv("WRDS_USER")
+        pass = Sys.getenv("WRDS_PASS")
+      }
+
       connect <- dbConnect(
         RPostgres::Postgres(),
         host = 'wrds-pgdata.wharton.upenn.edu',
         port = 9737,
         dbname = 'wrds',
         sslmode = 'require',
-        user = Sys.getenv("WRDS_USER"),
-        pass = Sys.getenv("WRDS_PASS")
+        user = user,
+        pass = pass
       )
 
       query <- "SELECT PERMNO, DATE, PRC, RET, SHROUT FROM CRSP.MSF"

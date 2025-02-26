@@ -14,7 +14,7 @@ list_release <- function(urls) {
         year <- as.numeric(release_id)
         month <- 0
       }
-      return(data.frame(release_id = release_id, year = year, month = month, 
+      return(data.frame(release_id = release_id, year = year, month = month,
                         stringsAsFactors = FALSE))
     }
     NULL
@@ -84,7 +84,7 @@ OpenAP <- R6::R6Class(
       if (is.null(release_year)) {
         # Default to the latest release (first row in the sorted data frame)
         selected <- releases[1, ]
-        message("No release specified. Defaulting to latest release: ", 
+        message("No release specified. Defaulting to latest release: ",
                 selected$release_id)
       } else {
         # Allow the user to pass a string like "2024_08" or a numeric value like 2022.
@@ -252,7 +252,7 @@ OpenAP <- R6::R6Class(
     },
 
     dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
-      connect <- dbConnect( 
+      connect <- dbConnect(
         RPostgres::Postgres(),
         host = 'wrds-pgdata.wharton.upenn.edu',
         port = 9737,
@@ -272,15 +272,15 @@ OpenAP <- R6::R6Class(
           Price = -log(abs(prc)),
           Size = -log(abs(prc * shrout / 1000)),
           STreversal = -coalesce(ret, 0)
-        ) |> 
-      select(permno, yyyymm, all_of(requested_crsp_signals))  
+        ) |>
+      select(permno, yyyymm, all_of(requested_crsp_signals))
 
       return(processed_data)
     },
 
     merge_crsp_with_signals = function(signals, crsp_data, requested_crsp_signals) {
       crsp_data <- crsp_data[, c("permno", "yyyymm", requested_crsp_signals), drop = FALSE]  # Only merge needed columns
-      merged_data <- signals |> 
+      merged_data <- signals |>
       left_join(crsp_data, by = c("permno", "yyyymm"))
     return(merged_data)
     },
@@ -323,7 +323,7 @@ OpenAP <- R6::R6Class(
 
       # Identify which predictors are OpenAP signals vs. CRSP signals
       requested_crsp_signals <- intersect(crsp_signals, predictor)
-      requested_predictors <- setdiff(predictor, crsp_signals) 
+      requested_predictors <- setdiff(predictor, crsp_signals)
       result <- data.frame()
 
       # Download only non-WRDS signals (from OpenAP)
@@ -370,7 +370,13 @@ OpenAP <- R6::R6Class(
     dl_all_signals = function(signed = FALSE) {
       url <- self$get_url("firm_char")
       temp_file <- tempfile()
-      download.file(url, temp_file, mode = "wb")
+
+      withr::with_options(
+        new = list(timeout = 600),
+        code = {
+          download.file(url, temp_file, mode = "wb")
+        }
+      )
 
       con <- file(temp_file, "rb")
       magic_bytes <- readBin(con, "raw", 4)

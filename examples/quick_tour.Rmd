@@ -1,0 +1,154 @@
+---
+title: "Quick tour"
+output: html_document
+---
+
+# Install and load the package:
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+# devtools::install_github("tomz23/OpenSourceAP.DownloadR")
+library(OpenSourceAP.DownloadR)
+
+```
+
+# Open an instance to the OpenAP dataset:
+```{r}
+openap <- OpenAP$new()
+
+```
+
+
+
+# Navigating Signal Doc
+
+The CZ dataset is organized around "signals." Each signal is described in the signal doc, which can be downloaded as follows:
+
+```{r}
+# Download signal doc
+signaldoc = openap$dl_signal_doc()
+
+# show a few rows
+signaldoc
+```
+
+Let's take a closer look at the `AssetGrowth` predictor. `signaldoc` has lots of info about this predictor. It provides the key table demonstrating predictability, as well as a summary of the evidence for predictability.
+```{r}
+signaldoc %>% 
+  filter(Acronym == "AssetGrowth") %>% 
+  t()
+```
+# Navigating Portfolio Returns
+
+For a given signal, there are many ways to implement portfolios. The CZ replication paper focuses on the "Original Paper" (op) implementations. These follow the "Key Table in OP" as found in `signaldoc`.
+
+We saw above that `AssetGrowth` has an enormous t-stat of 8.5. Let's see how well the CZ replication matches this result, using the "op" implementation.
+
+```{r}
+port_op = openap$dl_port('op', 'AssetGrowth')
+
+```
+```{r}
+# filter for long-short portfolios in sample
+longshort_insamp = port_op %>% 
+  filter(
+    port == 'LS', 
+    date >= '1968-01-01', 
+    date <= '2003-12-31' 
+  )
+
+# regress ret on constant
+result = lm(formula = ret ~ 1, 
+         data = longshort_insamp) %>% 
+  summary()
+
+print(paste0("t-stat is ", round(result$coefficients[,3], 2)))
+```
+
+The t-stat of 7.6 is not quite as large as the 8.5 in the original paper, but it is in the same ballpark.
+
+Using `signaldoc`, we saw that Cooper et al. focused on equal-weighting, decile-sorts, no special filters, 12-month rebalancing.
+
+How does it perform under other implementations? Let's see what implementations are available in the CZ dataset.
+
+```{r}
+openap$list_port()
+```
+
+There are lots of flavors of portfolio implementations above. Let's check out value-weighted deciles (`deciles_vw`) as well as a filter for market equity > the NYSE 20th percentile (`ex_nyse_p20_me`)
+
+```{r}
+# download alternative implementations
+port_vw       = openap$dl_port('deciles_vw', 'AssetGrowth')
+port_mescreen = openap$dl_port('ex_nyse_p20_me', 'AssetGrowth')
+
+```
+
+```{r}
+# append implementations
+port_all = port_op %>% 
+  mutate(imp = 'op') %>% 
+  bind_rows(
+    port_vw %>% 
+  mutate(imp = 'deciles_vw')) %>%
+  bind_rows(
+    port_mescreen %>% 
+      mutate(imp = 'ex_nyse_p20_me')
+  )
+
+# filter for long-short portfolios in sample
+port_all = port_all %>% 
+  filter(
+    port == 'LS',  
+    date >= '1968-01-01', 
+    date <= '2003-12-31'
+  )
+
+# regress ret on constant by group
+for (jj in unique(port_all$imp)) {
+    print(jj)
+  
+  result = lm(formula = ret ~ 1, 
+         data = port_all %>% 
+           filter(imp == jj)) %>% 
+  summary()
+
+print(paste0("t-stat is ", round(result$coefficients[,3], 2)))
+}
+```
+
+As expected, these liquidity adjustments lead to smaller t-stats. Value-weighting is a much more severe liquidity adjustment compared to removing stocks below the 20th percentile of NYSE market equity.
+
+You can also download all portfolios using a particular implementation by omitting the signal names.
+
+```{r}
+# download all original paper portfolios
+allport_op = openap$dl_port('op')
+
+# download all decile-value-weighted portfolios
+allport_vw = openap$dl_port('deciles_vw')
+```
+
+# Navigating Signal Data (a.k.a. firm-level characteristics)
+
+To download the signal data use the method `dl_signal()`.
+
+```{r}
+# Download AssetGrowth signals
+signal = openap$dl_signal('Size', 'AssetGrowth')
+
+signal
+```
+
+The first column above means that, in the end of December 1987, permno 10001 had an `AssetGrowth` signal (firm characteristic) of -0.038. So one can predict permno 10001's return in January 1988, or any month going forward, using this number.
+
+Following Fama and French (1992), the CZ data lags annual Compustat variables by 6 months, and then uses the signal for another 12 months. One can see the timing in the Github code here: https://github.com/OpenSourceAP/CrossSection/blob/master/Signals/Code/DataDownloads/B_CompustatAnnual.do
+
+One can also download all predictor signals at once. But this requires a lot of ram, can take a few minutes, and also requires a WRDS account. Thus, it is done using a distinct function (`dl_all_signals` instead of `dl_signal`).
+
+```{r}
+# download all signals at once
+allsignal = openap$dl_all_signals()
+```
+
+

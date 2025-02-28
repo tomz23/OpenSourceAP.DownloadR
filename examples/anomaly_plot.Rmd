@@ -50,13 +50,45 @@ cumRet %>%
   filter(port == 'LS') %>% 
   ggplot(aes(x = date, y = cumret)) +
   geom_line() +
-  geom_vline(xintercept = c(DateInSampleStart, DateInSampleEnd, DatePub), linetype = 2) +
-  labs(y = 'Cumulative return', x = 'Date') +
-  theme_bw()
-# +
-#   geom_text(aes(y = max(cumRet$cumret), label = c('In sample end', 'Publication')), vjust = -1) 
-
+  geom_vline(xintercept = c(DateInSampleStart, DateInSampleEnd), linetype = 2) +
+  geom_vline(xintercept = DatePub, linetype = 1) +
+  labs(y = 'Cumulative return', x = 'Date',
+       caption = 'Dashed vertical lines indicate the OP in-sample period, solid vertical line is the publication date.') +
+  theme_bw() 
 
 ```
 
+# Wrapped into one function
+
+```{r}
+plot_anomaly <- function(conn = NULL, implementation = 'op', anomaly = NULL){
+
+  port = conn$dl_port(implementation, anomaly)
+  signaldoc = conn$dl_signal_doc()
+  
+  DateInSampleStart = as.Date(paste0(signaldoc$SampleStartYear[signaldoc$Acronym == anomaly], '-12-31'))
+  DateInSampleEnd   = as.Date(paste0(signaldoc$SampleEndYear[signaldoc$Acronym == anomaly], '-12-31'))
+  DatePub           = as.Date(paste0(signaldoc$Year[signaldoc$Acronym == anomaly], '-12-31'))
+  
+  cumRet = port %>%
+    arrange(port, date) %>% 
+    group_by(port) %>% 
+    mutate(cumret = cumprod(1 + ret/100))
+  
+  cumRet %>% 
+    filter(port == 'LS') %>% 
+    ggplot(aes(x = date, y = cumret)) +
+    geom_line() +
+    geom_vline(xintercept = c(DateInSampleStart, DateInSampleEnd), linetype = 2) +
+    geom_vline(xintercept = DatePub, linetype = 1) +
+    labs(y = 'Cumulative return', x = 'Date',
+         caption = 'Dashed vertical lines indicate the OP in-sample period, solid vertical line is the publication date.') +
+    theme_bw() 
+}
+```
+
+# Example
+```{r}
+plot_anomaly(openap, 'op', 'TrendFactor')
+```
 

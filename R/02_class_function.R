@@ -333,41 +333,54 @@ OpenAP <- R6::R6Class(
 
       crsp_signals <- c("Price", "Size", "STreversal")
 
-      # Identify which predictors are OpenAP signals vs. CRSP signals
+      # distinction between crsp and openap signals
       requested_crsp_signals <- intersect(crsp_signals, predictor)
-      requested_predictors <- setdiff(predictor, crsp_signals)
+      requested_openap_signals <- setdiff(predictor, crsp_signals)
+      
       result <- data.frame()
 
-      # Download only non-WRDS signals (from OpenAP)
-      for (signal_name in requested_predictors) {
-        url <- self$get_individual_signal_url(signal_name)
-        if (is.null(url)) {
-          stop(paste("Could not retrieve URL for signal:", signal_name))
-        }
+      # Download OpenAP signals (only)
+      if (length(requested_openap_signals) > 0) {
+        for (signal_name in requested_openap_signals) {
+          url <- self$get_individual_signal_url(signal_name)
+          if (is.null(url)) {
+            stop(paste("Could not retrieve URL for signal:", signal_name))
+          }
 
-        temp_file <- tempfile()
-        download.file(url, temp_file, mode = "wb")
-        signal_data <- tryCatch(
-          read.csv(temp_file),
-          error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
-        )
+          temp_file <- tempfile()
+          download.file(url, temp_file, mode = "wb")
+          signal_data <- tryCatch(
+            read.csv(temp_file),
+            error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
+          )
 
-        if (nrow(result) == 0) {
-          result <- signal_data
-        } else {
-          result <- merge(result, signal_data, all = TRUE)
+          # Merge OpenAP data into result
+          if (nrow(result) == 0) {
+            result <- signal_data
+          } else {
+            result <- merge(result, signal_data, all = TRUE)
+          }
         }
       }
 
-      # Download and merge only requested CRSP signals
+      # Download CRSP signals
       if (length(requested_crsp_signals) > 0) {
-        crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
-        result <- self$merge_crsp_with_signals(result, crsp_data, requested_crsp_signals)
+        if (nrow(result) == 0) {
+          # If no OpenAP signals are available, download only CRSP signals
+          crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
+          result <- crsp_data
+        } else {
+          # If OpenAP signals exist: merge 
+          crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
+          result <- self$merge_crsp_with_signals(result, crsp_data, requested_crsp_signals)
+        }
       }
 
-      # Apply sign logic only to requested signals
-      all_signals <- unique(c(requested_predictors, requested_crsp_signals))
-      result <- self$apply_sign_logic(result, all_signals, self$signal_sign, signed)
+      # Signing logic
+      if (nrow(result) > 0) {
+        all_signals <- unique(c(requested_openap_signals, requested_crsp_signals))
+        result <- self$apply_sign_logic(result, all_signals, self$signal_sign, signed)
+      }
 
       return(result)
     },

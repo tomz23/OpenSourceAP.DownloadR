@@ -135,7 +135,7 @@ To download the signal data use the method `dl_signal()`.
 
 ```{r}
 # Download AssetGrowth signals
-signal = openap$dl_signal('Size', 'AssetGrowth')
+signal = openap$dl_signal('AssetGrowth')
 
 signal
 ```

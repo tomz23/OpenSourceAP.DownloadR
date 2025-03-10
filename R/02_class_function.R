@@ -253,6 +253,11 @@ OpenAP <- R6::R6Class(
 
     dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
 
+      # Ensure requested_crsp_signals is always assigned the default if NULL
+      if (is.null(requested_crsp_signals)) {
+        requested_crsp_signals <- c("Price", "Size", "STreversal")
+      }
+      
       # Checking whether wrds access is saved in environment variables, if not prompt:
       if (Sys.getenv("WRDS_USER") == '' | Sys.getenv("WRDS_PASS") == '') {
         message("WRDS credentials not found. To avoid entering them each time, please save them as environment variables WRDS_USER and WRDS_PASS.
@@ -290,11 +295,9 @@ OpenAP <- R6::R6Class(
       return(processed_data)
     },
 
-    merge_crsp_with_signals = function(signals, crsp_data, requested_crsp_signals) {
-      crsp_data <- crsp_data[, c("permno", "yyyymm", requested_crsp_signals), drop = FALSE]  # Only merge needed columns
-      merged_data <- signals |>
-      left_join(crsp_data, by = c("permno", "yyyymm"))
-    return(merged_data)
+    merge_crsp_with_signals = function(signals, crsp_data) {
+      merged_data <- left_join(signals, crsp_data, by = c("permno", "yyyymm"))
+      return(merged_data)
     },
 
     apply_sign_logic = function(data, predictors, signal_sign, signed = TRUE) {
@@ -372,7 +375,7 @@ OpenAP <- R6::R6Class(
         } else {
           # If OpenAP signals exist: merge 
           crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
-          result <- self$merge_crsp_with_signals(result, crsp_data, requested_crsp_signals)
+          result <- self$merge_crsp_with_signals(result, crsp_data)
         }
       }
 

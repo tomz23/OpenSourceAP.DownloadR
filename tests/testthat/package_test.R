@@ -75,3 +75,4 @@ data14 <- openap_instance$dl_signal(c("Accruals", "STreversal"), signed = FALSE)
 
 # Only WRDS
 data15 <- openap_instance$dl_signal("STreversal")
+data16 <- openap_instance$dl_signal(c("STreversal", "Size"))

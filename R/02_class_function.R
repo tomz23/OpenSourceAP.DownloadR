@@ -14,7 +14,7 @@ list_release <- function(urls) {
         year <- as.numeric(release_id)
         month <- 0
       }
-      return(data.frame(release_id = release_id, year = year, month = month, 
+      return(data.frame(release_id = release_id, year = year, month = month,
                         stringsAsFactors = FALSE))
     }
     NULL
@@ -84,7 +84,7 @@ OpenAP <- R6::R6Class(
       if (is.null(release_year)) {
         # Default to the latest release (first row in the sorted data frame)
         selected <- releases[1, ]
-        message("No release specified. Defaulting to latest release: ", 
+        message("No release specified. Defaulting to latest release: ",
                 selected$release_id)
       } else {
         # Allow the user to pass a string like "2024_08" or a numeric value like 2022.
@@ -252,14 +252,26 @@ OpenAP <- R6::R6Class(
     },
 
     dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
-      connect <- dbConnect( 
+
+      # Checking whether wrds access is saved in environment variables, if not prompt:
+      if (Sys.getenv("WRDS_USER") == '' | Sys.getenv("WRDS_PASS") == '') {
+        message("WRDS credentials not found. To avoid entering them each time, please save them as environment variables WRDS_USER and WRDS_PASS.
+                Still, you might have to log in to the website first, to go through 2FA once.")
+        user = getPass::getPass("Enter your WRDS username:")
+        pass = getPass::getPass("Enter your WRDS password:")
+      } else {
+        user = Sys.getenv("WRDS_USER")
+        pass = Sys.getenv("WRDS_PASS")
+      }
+
+      connect <- dbConnect(
         RPostgres::Postgres(),
         host = 'wrds-pgdata.wharton.upenn.edu',
         port = 9737,
         dbname = 'wrds',
         sslmode = 'require',
-        user = Sys.getenv("WRDS_USER"),
-        pass = Sys.getenv("WRDS_PASS")
+        user = user,
+        pass = pass
       )
 
       query <- "SELECT PERMNO, DATE, PRC, RET, SHROUT FROM CRSP.MSF"
@@ -272,15 +284,15 @@ OpenAP <- R6::R6Class(
           Price = -log(abs(prc)),
           Size = -log(abs(prc * shrout / 1000)),
           STreversal = -coalesce(ret, 0)
-        ) |> 
-      select(permno, yyyymm, all_of(requested_crsp_signals))  
+        ) |>
+      select(permno, yyyymm, all_of(requested_crsp_signals))
 
       return(processed_data)
     },
 
     merge_crsp_with_signals = function(signals, crsp_data, requested_crsp_signals) {
       crsp_data <- crsp_data[, c("permno", "yyyymm", requested_crsp_signals), drop = FALSE]  # Only merge needed columns
-      merged_data <- signals |> 
+      merged_data <- signals |>
       left_join(crsp_data, by = c("permno", "yyyymm"))
     return(merged_data)
     },
@@ -321,41 +333,54 @@ OpenAP <- R6::R6Class(
 
       crsp_signals <- c("Price", "Size", "STreversal")
 
-      # Identify which predictors are OpenAP signals vs. CRSP signals
+      # distinction between crsp and openap signals
       requested_crsp_signals <- intersect(crsp_signals, predictor)
-      requested_predictors <- setdiff(predictor, crsp_signals) 
+      requested_openap_signals <- setdiff(predictor, crsp_signals)
+      
       result <- data.frame()
 
-      # Download only non-WRDS signals (from OpenAP)
-      for (signal_name in requested_predictors) {
-        url <- self$get_individual_signal_url(signal_name)
-        if (is.null(url)) {
-          stop(paste("Could not retrieve URL for signal:", signal_name))
-        }
+      # Download OpenAP signals (only)
+      if (length(requested_openap_signals) > 0) {
+        for (signal_name in requested_openap_signals) {
+          url <- self$get_individual_signal_url(signal_name)
+          if (is.null(url)) {
+            stop(paste("Could not retrieve URL for signal:", signal_name))
+          }
 
-        temp_file <- tempfile()
-        download.file(url, temp_file, mode = "wb")
-        signal_data <- tryCatch(
-          read.csv(temp_file),
-          error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
-        )
+          temp_file <- tempfile()
+          download.file(url, temp_file, mode = "wb")
+          signal_data <- tryCatch(
+            read.csv(temp_file),
+            error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
+          )
 
-        if (nrow(result) == 0) {
-          result <- signal_data
-        } else {
-          result <- merge(result, signal_data, all = TRUE)
+          # Merge OpenAP data into result
+          if (nrow(result) == 0) {
+            result <- signal_data
+          } else {
+            result <- merge(result, signal_data, all = TRUE)
+          }
         }
       }
 
-      # Download and merge only requested CRSP signals
+      # Download CRSP signals
       if (length(requested_crsp_signals) > 0) {
-        crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
-        result <- self$merge_crsp_with_signals(result, crsp_data, requested_crsp_signals)
+        if (nrow(result) == 0) {
+          # If no OpenAP signals are available, download only CRSP signals
+          crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
+          result <- crsp_data
+        } else {
+          # If OpenAP signals exist: merge 
+          crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
+          result <- self$merge_crsp_with_signals(result, crsp_data, requested_crsp_signals)
+        }
       }
 
-      # Apply sign logic only to requested signals
-      all_signals <- unique(c(requested_predictors, requested_crsp_signals))
-      result <- self$apply_sign_logic(result, all_signals, self$signal_sign, signed)
+      # Signing logic
+      if (nrow(result) > 0) {
+        all_signals <- unique(c(requested_openap_signals, requested_crsp_signals))
+        result <- self$apply_sign_logic(result, all_signals, self$signal_sign, signed)
+      }
 
       return(result)
     },
@@ -370,7 +395,13 @@ OpenAP <- R6::R6Class(
     dl_all_signals = function(signed = FALSE) {
       url <- self$get_url("firm_char")
       temp_file <- tempfile()
-      download.file(url, temp_file, mode = "wb")
+
+      withr::with_options(
+        new = list(timeout = 600),
+        code = {
+          download.file(url, temp_file, mode = "wb")
+        }
+      )
 
       con <- file(temp_file, "rb")
       magic_bytes <- readBin(con, "raw", 4)

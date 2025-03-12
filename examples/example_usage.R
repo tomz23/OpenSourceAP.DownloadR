@@ -54,5 +54,6 @@ df = openap$dl_port('deciles_ew', c('BM', 'Mom6m'))
 df = openap$dl_all_signals()
 
 # Download specific firm characteristics
-df = openap$dl_signal('BM')
+df = openap$dl_signal(c('BM', 'AssetGrowth'))
+df = openap$dl_signal(c('BM', 'AssetGrowth', 'Size'))  # Requires WRDS login
 

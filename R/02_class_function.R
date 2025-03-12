@@ -219,10 +219,6 @@ OpenAP <- R6::R6Class(
           # make sure data are in tibble format and date correctly formatted
           mutate(date = lubridate::ymd(date)) %>%
           tibble()
-        data <- data[order(data$signalname, data$port, data$date), ] %>%
-          # make sure data are in tibble format and date correctly formatted
-          mutate(date = lubridate::ymd(date)) %>%
-          tibble()
         return(data)
     },
 
@@ -257,7 +253,7 @@ OpenAP <- R6::R6Class(
       if (is.null(requested_crsp_signals)) {
         requested_crsp_signals <- c("Price", "Size", "STreversal")
       }
-      
+
       # Checking whether wrds access is saved in environment variables, if not prompt:
       if (Sys.getenv("WRDS_USER") == '' | Sys.getenv("WRDS_PASS") == '') {
         message("WRDS credentials not found. To avoid entering them each time, please save them as environment variables WRDS_USER and WRDS_PASS.
@@ -290,7 +286,9 @@ OpenAP <- R6::R6Class(
           Size = -log(abs(prc * shrout / 1000)),
           STreversal = -coalesce(ret, 0)
         ) |>
-      select(permno, yyyymm, all_of(requested_crsp_signals))
+      select(permno, yyyymm, all_of(requested_crsp_signals)) %>%
+        # make sure data are in tibble format
+        tibble()
 
       return(processed_data)
     },
@@ -339,7 +337,7 @@ OpenAP <- R6::R6Class(
       # distinction between crsp and openap signals
       requested_crsp_signals <- intersect(crsp_signals, predictor)
       requested_openap_signals <- setdiff(predictor, crsp_signals)
-      
+
       result <- data.frame()
 
       # Download OpenAP signals (only)
@@ -373,7 +371,7 @@ OpenAP <- R6::R6Class(
           crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
           result <- crsp_data
         } else {
-          # If OpenAP signals exist: merge 
+          # If OpenAP signals exist: merge
           crsp_data <- self$dl_signal_crsp3(requested_crsp_signals)
           result <- self$merge_crsp_with_signals(result, crsp_data)
         }

@@ -26,7 +26,7 @@ Learn more about OpenAP: \href{https://openassetpricing.com}{Data webside} | \hr
 ## Method `OpenAP$new`
 ## ------------------------------------------------
 
-openap_instance <- OpenAP$new(release_year = 2023)
+openap_instance <- OpenAP$new(release_year = "2023")
 
 ## ------------------------------------------------
 ## Method `OpenAP$list_port`
@@ -92,7 +92,6 @@ signal_doc <- openap_instance$dl_signal_doc()
 \item \href{#method-OpenAP-dl_port}{\code{OpenAP$dl_port()}}
 \item \href{#method-OpenAP-get_individual_signal_url}{\code{OpenAP$get_individual_signal_url()}}
 \item \href{#method-OpenAP-dl_signal_crsp3}{\code{OpenAP$dl_signal_crsp3()}}
-\item \href{#method-OpenAP-merge_crsp_with_signals}{\code{OpenAP$merge_crsp_with_signals()}}
 \item \href{#method-OpenAP-apply_sign_logic}{\code{OpenAP$apply_sign_logic()}}
 \item \href{#method-OpenAP-dl_signal}{\code{OpenAP$dl_signal()}}
 \item \href{#method-OpenAP-dl_all_signals}{\code{OpenAP$dl_all_signals()}}
@@ -119,7 +118,7 @@ Loads mappings, individual signal IDs and signal documentation.
 }
 \subsection{Examples}{
 \if{html}{\out{<div class="r example copy">}}
-\preformatted{openap_instance <- OpenAP$new(release_year = 2023)
+\preformatted{openap_instance <- OpenAP$new(release_year = "2023")
 }
 \if{html}{\out{</div>}}
 
@@ -228,34 +227,49 @@ A string representing the URL of the signal.
 \if{html}{\out{<a id="method-OpenAP-dl_signal_crsp3"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_signal_crsp3}{}}}
 \subsection{Method \code{dl_signal_crsp3()}}{
+Is being used in "dl_signal()" to download CRSP signals. Requires WRDS credentials.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal_crsp3()}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal_crsp3(
+  requested_crsp_signals = c("Price", "Size", "STreversal")
+)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{requested_crsp_signals}}{A vector of CRSP signals to download.}
 }
-\if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-OpenAP-merge_crsp_with_signals"></a>}}
-\if{latex}{\out{\hypertarget{method-OpenAP-merge_crsp_with_signals}{}}}
-\subsection{Method \code{merge_crsp_with_signals()}}{
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OpenAP$merge_crsp_with_signals(signals, crsp_data)}\if{html}{\out{</div>}}
+\if{html}{\out{</div>}}
 }
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-apply_sign_logic"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-apply_sign_logic}{}}}
 \subsection{Method \code{apply_sign_logic()}}{
+applies the sign logic to the data based on the signal documentation.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$apply_sign_logic(data, predictors, signal_sign, signed = TRUE)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{data}}{The data frame to apply the sign logic to.}
+
+\item{\code{predictors}}{A vector of predictor names.}
+
+\item{\code{signal_sign}}{A data frame containing the signal documentation.}
+
+\item{\code{signed}}{Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.}
+}
+\if{html}{\out{</div>}}
+}
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_signal"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_signal}{}}}
 \subsection{Method \code{dl_signal()}}{
-Downloads specific firm  characteristics.
+Downloads specific firm characteristics.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal(predictor = NULL, signed = TRUE)}\if{html}{\out{</div>}}
 }
@@ -290,6 +304,13 @@ Downloads all firm level characteristics from the release folder.
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_all_signals(signed = FALSE)}\if{html}{\out{</div>}}
 }
 
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{signed}}{Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.}
+}
+\if{html}{\out{</div>}}
+}
 \subsection{Returns}{
 A data frame containing all firm level characteristics.
 }

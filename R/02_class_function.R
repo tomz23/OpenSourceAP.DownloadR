@@ -76,7 +76,7 @@ OpenAP <- R6::R6Class(
     #' @param release_year
     #'
     #' @examples
-    #' openap_instance <- OpenAP$new(release_year = 2023)
+    #' openap_instance <- OpenAP$new(release_year = "2023")
     initialize = function(release_year = NULL) {
       # Get the list of available releases (with identifiers like "2024_08", "2023", etc.)
       releases <- list_release(urls)
@@ -247,6 +247,9 @@ OpenAP <- R6::R6Class(
       return(url)
     },
 
+    #' @description
+    #' Is being used in "dl_signal()" to download CRSP signals. Requires WRDS credentials.
+    #' @param requested_crsp_signals A vector of CRSP signals to download.
     dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
 
       # Ensure requested_crsp_signals is always assigned the default if NULL
@@ -293,11 +296,12 @@ OpenAP <- R6::R6Class(
       return(processed_data)
     },
 
-    merge_crsp_with_signals = function(signals, crsp_data) {
-      merged_data <- left_join(signals, crsp_data, by = c("permno", "yyyymm"))
-      return(merged_data)
-    },
-
+    #' @description
+    #' applies the sign logic to the data based on the signal documentation.
+    #' @param data The data frame to apply the sign logic to.
+    #' @param predictors A vector of predictor names.
+    #' @param signal_sign A data frame containing the signal documentation.
+    #' @param signed Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.
     apply_sign_logic = function(data, predictors, signal_sign, signed = TRUE) {
       if (!signed) {
         # Check for CRSP signals and apply transformation
@@ -388,6 +392,7 @@ OpenAP <- R6::R6Class(
 
     #' @description
     #' Downloads all firm level characteristics from the release folder.
+    #' @param signed Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.
     #'
     #' @return A data frame containing all firm level characteristics.
     #'

@@ -14,15 +14,19 @@ library(lubridate)
 # devtools::install_github("tomz23/OpenSourceAP.DownloadR")
 library(OpenSourceAP.DownloadR)
 
-# connect to WRDS 
+# define WRDS credentials (use .Renviron or manually enter here)
+wrds_user <- Sys.getenv("WRDS_USER", unset = "your_wrds_username_here")
+wrds_pass <- Sys.getenv("WRDS_PASS", unset = "your_wrds_password_here")
+
+# connect to WRDS
 connect <- dbConnect(
-        RPostgres::Postgres(),
-        host = 'wrds-pgdata.wharton.upenn.edu',
-        port = 9737,
-        dbname = 'wrds',
-        sslmode = 'require',
-        user = Sys.getenv("WRDS_USER"),  # alternatively manually enter WRDS credentials here
-        pass = Sys.getenv("WRDS_PASS")   # alternatively manually enter WRDS credentials here
+  RPostgres::Postgres(),
+  host = 'wrds-pgdata.wharton.upenn.edu',
+  port = 9737,
+  dbname = 'wrds',
+  sslmode = 'require',
+  user = wrds_user,  
+  pass = wrds_pass
 )
 
 # initialize OpenAP
@@ -66,8 +70,7 @@ Merging is straightforward. Both tables have date columns that mark the last day
 
 ```{r}
 portff <- port %>%
-          inner_join(ff %>% 
-          select(all_of(factor_list)), by = c("date" = "dateff"))
+  inner_join(ff %>% select(all_of(factor_list)), by = c("date" = "dateff"))
 
 head(portff)
 ```

@@ -1,0 +1,94 @@
+---
+title: "Anomaly plotting"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+# devtools::install_github("tomz23/OpenSourceAP.DownloadR")
+library(OpenSourceAP.DownloadR)
+```
+
+To plot the long-short return of a particular anomaly:
+1. Download the portfolio data
+2. (Optional) Download the signal documentation data
+3. Calculate cumulative returns over time and plot
+
+# Open an instance to the OpenAP dataset:
+```{r}
+openap <- OpenAP$new()
+```
+
+# 1. Dowload anomaly portfolio data
+```{r}
+port_op = openap$dl_port('op', 'IndIPO')
+```
+
+
+# 2. (Optional) Download signal documentation and extract some info
+```{r}
+# Download signal doc
+signaldoc = openap$dl_signal_doc()
+
+# Extract some info
+DateInSampleStart = as.Date(paste0(signaldoc$SampleStartYear[signaldoc$Acronym == 'IndIPO'], '-12-31'))
+DateInSampleEnd   = as.Date(paste0(signaldoc$SampleEndYear[signaldoc$Acronym == 'IndIPO'], '-12-31'))
+DatePub           = as.Date(paste0(signaldoc$Year[signaldoc$Acronym == 'IndIPO'], '-12-31'))
+
+```
+
+3. Calculate cumulative returns over time and plot
+```{r}
+# Calculate cumulative returns
+cumRet = port_op %>%
+  arrange(port, date) %>% 
+  group_by(port) %>% 
+  mutate(cumret = cumprod(1 + ret/100))
+
+cumRet %>% 
+  filter(port == 'LS') %>% 
+  ggplot(aes(x = date, y = cumret)) +
+  geom_line() +
+  geom_vline(xintercept = c(DateInSampleStart, DateInSampleEnd), linetype = 2) +
+  geom_vline(xintercept = DatePub, linetype = 1) +
+  labs(y = 'Cumulative return', x = 'Date',
+       caption = 'Dashed vertical lines indicate the OP in-sample period, solid vertical line is the publication date.') +
+  theme_bw() 
+
+```
+
+# Wrapped into one function
+
+```{r}
+plot_anomaly <- function(conn = NULL, implementation = 'op', anomaly = NULL){
+
+  port = conn$dl_port(implementation, anomaly)
+  signaldoc = conn$dl_signal_doc()
+  
+  DateInSampleStart = as.Date(paste0(signaldoc$SampleStartYear[signaldoc$Acronym == anomaly], '-12-31'))
+  DateInSampleEnd   = as.Date(paste0(signaldoc$SampleEndYear[signaldoc$Acronym == anomaly], '-12-31'))
+  DatePub           = as.Date(paste0(signaldoc$Year[signaldoc$Acronym == anomaly], '-12-31'))
+  
+  cumRet = port %>%
+    arrange(port, date) %>% 
+    group_by(port) %>% 
+    mutate(cumret = cumprod(1 + ret/100))
+  
+  cumRet %>% 
+    filter(port == 'LS') %>% 
+    ggplot(aes(x = date, y = cumret)) +
+    geom_line() +
+    geom_vline(xintercept = c(DateInSampleStart, DateInSampleEnd), linetype = 2) +
+    geom_vline(xintercept = DatePub, linetype = 1) +
+    labs(y = 'Cumulative return', x = 'Date',
+         caption = 'Dashed vertical lines indicate the OP in-sample period, solid vertical line is the publication date.') +
+    theme_bw() 
+}
+```
+
+# Example
+```{r}
+plot_anomaly(openap, 'op', 'TrendFactor')
+```
+

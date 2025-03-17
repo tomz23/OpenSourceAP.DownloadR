@@ -1,0 +1,223 @@
+---
+title: "Merge signals with CRSP"
+output: html_document
+---
+
+# Setup
+
+```{r setup, include=FALSE, message=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+# devtools::install_github("tomz23/OpenSourceAP.DownloadR")
+library(OpenSourceAP.DownloadR)
+
+# define WRDS credentials (use .Renviron or manually enter here)
+wrds_user <- Sys.getenv("WRDS_USER", unset = "your_wrds_username_here")
+wrds_pass <- Sys.getenv("WRDS_PASS", unset = "your_wrds_password_here")
+
+# connect to WRDS
+connect <- dbConnect(
+  RPostgres::Postgres(),
+  host = 'wrds-pgdata.wharton.upenn.edu',
+  port = 9737,
+  dbname = 'wrds',
+  sslmode = 'require',
+  user = wrds_user,  
+  pass = wrds_pass
+)
+
+# initialize OpenAP
+openap = OpenAP$new()
+
+# desired signal list
+signal_list = c('BM', 'AssetGrowth')
+```
+
+# Download data
+
+Let's download select signals and a sample of CRSP returns. Note that in the dl_signal call, we do not ask for the signals to be "signed." We'll return to this in the Sanity Check section.
+
+```{r}
+signals <- openap$dl_signal(signal_list)
+```
+
+```{r}
+# use 1980 to 1989 for quick dl and for similarity to original paper periods
+query <- "select permno, 
+                 date, 
+                 ret*100 as ret 
+          from crsp.msf
+          where date>='01/01/1980' and date<='12/31/1989'"
+
+# download crsp returns
+crsp <- dbGetQuery(connect, query)
+dbDisconnect(connect)
+```
+
+[Optional:]{style="color: orange; font-weight: bold;"} you may want to screen for common stocks and standard exchanges in the above. This filter matters little for this older sample, but in more recent years this filter is helpful for removing ETFs.
+
+# Lag signals and merge
+
+To lag signals, you can just add one month to the yyyymm column for the signals. For simplicity, let's fill in the day of the new variable date as the 28th (the signals are assumed to be available for trading at the end of the month). You can keep around yyyymm as yyyymm_signals for sanity checks.
+
+```{r}
+# Create a copy of signals
+signals_lag <- signals 
+
+# Rename the column
+signals_lag <- signals_lag %>%
+  rename(yyyymm_signals = yyyymm)
+
+# Convert yyyymm to a date and add one month
+signals_lag <- signals_lag %>%
+  mutate(date = ymd(paste0(yyyymm_signals, "28")) %m+% months(1))
+
+# Display the first few rows
+head(signals_lag)
+```
+
+```{r}
+# Convert CRSP dates to the 28th of the month
+crsp <- crsp %>%
+  mutate(date = ymd(paste0(format(date, "%Y%m"), "28")))
+
+# Left join CRSP data with signals_lag on 'permno' and 'date'
+crsp_signals <- crsp %>%
+  left_join(signals_lag, by = c("permno", "date"))
+
+# Display the first few rows
+head(crsp_signals)
+```
+
+# Sanity checks
+
+Let's check some magnitudes, make sure they're reasonable. Portfolio sorts are usually the best way to check this. First B/M:
+
+```{r}
+n <- 5  # Define the number of portfolios
+signalname <- "BM"  # Select signal
+
+# Process signal data and assign stocks to portfolios
+temp <- crsp_signals %>%
+  filter(!is.na(!!sym(signalname))) %>%  # Drop NA before calculating quantiles
+  select(permno, date, ret, all_of(signalname)) %>%
+  group_by(date) %>%
+  mutate(port = cut(
+    !!sym(signalname), 
+    breaks = quantile(!!sym(signalname), probs = seq(0, 1, length.out = n + 1), na.rm = TRUE), 
+    labels = 1:n, 
+    include.lowest = TRUE
+  )) %>%
+  ungroup()
+
+
+# Calculate number of stocks and mean return by date and portfolio
+port <- temp %>%
+  group_by(date, port) %>%
+  summarise(
+    nstock = n(),
+    ret = mean(ret, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Calculate mean return, standard deviation of return, and mean number of stocks by portfolio
+port_summary <- port %>%
+  group_by(port) %>%
+  summarise(
+    ret_mean = mean(ret, na.rm = TRUE),
+    ret_sd = sd(ret, na.rm = TRUE),
+    nstock_mean = mean(nstock, na.rm = TRUE),
+    date_min = min(date, na.rm = TRUE),
+    date_max = max(date, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Display the result
+print(port_summary)
+
+```
+
+So B/M long-short quintiles earned about 140 bps per month. This absurdly large, from a naive perspective. But these returns use tiny stocks (see the nstock count), occur before the internet (see the date min and max), and are quite concentrated in the short leg (see return gap between ports 1 and 2). Overall, this magnitude matches what is found in the anomalies lit (McLean and Pontiff 2016; Chen and Zimmermann 2021, CFR).
+
+Now let's check on AssetGrowth
+
+```{r}
+n <- 5  # Define the number of portfolios
+signalname <- "AssetGrowth"  # Select signal
+
+# Process signal data and assign stocks to portfolios
+temp <- crsp_signals %>%
+  filter(!is.na(!!sym(signalname))) %>%  # Remove NA values before quantile calculation
+  select(permno, date, ret, all_of(signalname)) %>%
+  group_by(date) %>%
+  mutate(port = cut(!!sym(signalname), 
+                    breaks = quantile(!!sym(signalname), probs = seq(0, 1, length.out = n + 1), na.rm = TRUE), 
+                    labels = 1:n, 
+                    include.lowest = TRUE)) %>%
+  ungroup()
+
+# Calculate number of stocks and mean return by date and portfolio
+port <- temp %>%
+  group_by(date, port) %>%
+  summarise(
+    nstock = n(),
+    ret = mean(ret, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Calculate mean return, standard deviation of return, and mean number of stocks by portfolio
+port_summary <- port %>%
+  group_by(port) %>%
+  summarise(
+    ret_mean = mean(ret, na.rm = TRUE),
+    ret_sd = sd(ret, na.rm = TRUE),
+    nstock_mean = mean(nstock, na.rm = TRUE),
+    date_min = min(date, na.rm = TRUE),
+    date_max = max(date, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Display the result
+print(port_summary)
+```
+
+The return spread of 74 bps per month for long-short quintiles is once again similar to the anomalies. As usual, the short leg is super critical. Nearly all of the returns are found by shorting portfolio 5---at least during the 1980s and in these tiny stocks.
+
+But unlike B/M, high asset growth means low returns going forward. We can check that this makes sense by checking the Signal Documentation.
+
+```{r}
+# Download signal document (assuming a function similar to openap.dl_signal_doc exists)
+signaldoc <- openap$dl_signal_doc()
+
+# Filter and show detailed definitions for acronyms in the signal list
+filtered_signaldoc <- signaldoc %>%
+  filter(Acronym %in% signal_list) %>%
+  select(Acronym, Authors, Year, Sign, `Detailed.Definition`)
+
+# show detailed definition for Acronyms in signal list
+print(filtered_signaldoc)
+```
+
+According to the signal doc, Cooper, Gulen, and Schill (2008) find a negative relationship between AssetGrowth and future returns, in contrast to the positive sign for BM from Stattman 1980. If you know this literature well, you can see the signs by the Detailed Definitions.
+
+One can alternatively download signals such that high signals mean high future returns, by using the signed argument in dl_signal:
+
+```{r}
+# download signed signals
+signals_signed <- openap$dl_signal(signal_list, signed = FALSE)
+```
+
+```{r}
+# compare signed and unsigned signals
+filtered_signals <- signals %>%
+  filter(permno == 10001) %>%
+  distinct(across(all_of(signal_list)), .keep_all = TRUE)
+
+signals_comparison <- filtered_signals %>%
+  inner_join(signals_signed, by = c("permno", "yyyymm"))
+
+head(signals_comparison)
+```
+
+So using signed=True, the sign of BM is unchanged, but the sign of AssetGrowth is flipped.

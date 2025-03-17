@@ -1,0 +1,218 @@
+---
+title: "Merge Portfolios with Fama-French Factors"
+output: html_document
+---
+
+# Setup
+
+Example of merging portfolio returns with Fama-French factors. We'll use WRDS for smooth downloading of the Fama-French factors, so you'll need a WRDS account. But in principle you could download the factors from Kenneth French's website.
+
+```{r setup, include=FALSE, message=TRUE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(lubridate)
+# devtools::install_github("tomz23/OpenSourceAP.DownloadR")
+library(OpenSourceAP.DownloadR)
+
+# define WRDS credentials (use .Renviron or manually enter here)
+wrds_user <- Sys.getenv("WRDS_USER", unset = "your_wrds_username_here")
+wrds_pass <- Sys.getenv("WRDS_PASS", unset = "your_wrds_password_here")
+
+# connect to WRDS
+connect <- dbConnect(
+  RPostgres::Postgres(),
+  host = 'wrds-pgdata.wharton.upenn.edu',
+  port = 9737,
+  dbname = 'wrds',
+  sslmode = 'require',
+  user = wrds_user,  
+  pass = wrds_pass
+)
+
+# initialize OpenAP
+openap = OpenAP$new()
+```
+
+# Download data
+
+Let's examine Chen-Zimmermann equal-weighted quintiles. One can alternatively examine the original paper or other implementations (see run openap.list_port() for other options). Let's use the FF5 factors + momentum.
+
+```{r}
+# download Chen-Zimmermann value-weighted quintile returns
+port <- openap$dl_port('quintiles_ew')
+
+head(port)
+```
+
+```{r}
+query <- "select * from ff.fivefactors_monthly"
+
+# download Fama-French factors
+ff <- dbGetQuery(connect, query)
+dbDisconnect(connect)
+
+# convert to percent
+fac_list <- c('mktrf', 'smb', 'hml', 'rmw', 'cma', 'umd')
+for (fac in fac_list) {
+  ff[[fac]] <- ff[[fac]] * 100
+}
+
+head(ff)
+```
+
+```{r}
+factor_list <- c("dateff", fac_list)
+```
+
+# Merge
+
+Merging is straightforward. Both tables have date columns that mark the last day of the month for the corresponding monthly returns.
+
+```{r}
+portff <- port %>%
+  inner_join(ff %>% select(all_of(factor_list)), by = c("date" = "dateff"))
+
+head(portff)
+```
+
+# Check alphas
+
+There's a myth that the predictor zoo boils down to a few factors. Let's see if this holds for equal-weighted quintiles, using the FF5 factors.
+
+As a benchmark, first let's check out the mean raw returns (no factor adjustments):
+
+```{r}
+# define regression
+reg <- function(group) {
+  fit <- lm(ret ~ 1, data = group)  
+  data.frame(
+    meanret = coef(fit)[1],  
+    tstat = summary(fit)$coefficients[1, 3],  
+    nmonth = nrow(group),  
+    datemin = min(group$date),  
+    datemax = max(group$date)   
+  )
+}
+
+# apply regression
+portsum <- portff %>%
+  group_by(signalname, port) %>%
+  do(reg(.)) %>%
+  ungroup()
+
+
+# get meanret, tstat, and nmonth by portfolio
+portsum_mean <- portsum %>%
+  group_by(port) %>%
+  summarise(
+    meanret = mean(meanret),
+    tstat = mean(tstat),
+    nmonth = mean(nmonth),
+    datemin = mean(datemin),
+    datemax = mean(datemax),
+    nsignals = n()  
+  ) %>%
+  mutate(
+    datemin = as.Date(datemin),  
+    datemax = as.Date(datemax)  
+  )
+
+# Show the result
+print(portsum_mean)
+```
+
+So, without any factor adjustments, the mean returns show a clear increasing pattern across quintiles, with a long-short spread of 47 bps per month. This is somewhat smaller than the numbers reported in the literature (e.g. Chen and Zimmermann 2021), but this includes data up through 2023. Returns are much smaller in post 2005 (Chen and Velikov 2023).
+
+You might notice that the number of signals is (1) overall smaller than the full Chen-Zimmermann dataset and (2) portfolios two and three are have one fewer signal. This is due to discrete signals or degenerate signal distributions. Let's return to this in a bit.
+
+But first, let's adjust for exposure to the CAPM + Fama-French factors + Momentum:
+
+```{r}
+# Define the regression function
+reg <- function(group) {
+  fit <- lm(ret ~ mktrf + smb + hml + rmw + cma + umd, data = group)  # 
+  data.frame(
+    meanret = coef(fit)[1],  
+    tstat = summary(fit)$coefficients[1, 3],  
+    nmonth = nrow(group),  
+    datemin = min(group$date),  
+    datemax = max(group$date)   
+  )
+}
+
+# Apply regression 
+portsum <- portff %>%
+  group_by(signalname, port) %>%
+  do(reg(.)) %>%
+  ungroup()
+
+# get meanret, tstat and nmonth by portfolio
+portsum_mean <- portsum %>%
+  group_by(port) %>%
+  summarise(
+    meanret = mean(meanret),
+    tstat = mean(tstat),
+    nmonth = mean(nmonth),
+    datemin = mean(datemin),
+    datemax = mean(datemax),
+    nsignals = n()  
+  ) %>%
+  mutate(
+    datemin = as.Date(datemin),  
+    datemax = as.Date(datemax)   
+  )
+
+print(portsum_mean)
+```
+
+After adjusting for exposure to factors, the increasing pattern is still clear, and the long-short spread is little changed. The 47 bps per month long-short spread is now a 38 bps per month after adjusting for these six prominent factors (including a few Nobel-prize winning ones).
+
+# Discrete and degenerate signals
+
+Let's see which signals are missing the interior portfolios.
+
+```{r}
+# Find signal names in port 01
+signallist_01 <- portff %>% 
+  filter(port == '01') %>%
+  pull(signalname) %>%
+  unique()
+
+# Find signal names in port 02
+signallist_02 <- portff %>%
+  filter(port == '02') %>%
+  pull(signalname) %>%
+  unique()
+
+# Find signal names in port 03
+signallist_03 <- portff %>%
+  filter(port == '03') %>%
+  pull(signalname) %>%
+  unique()
+
+# Print the results
+cat('Signals missing from port 02:', setdiff(signallist_01, signallist_02), '\n')
+cat('Signals missing from port 03:', setdiff(signallist_01, signallist_03), '\n')
+
+```
+
+So the signals with missing portfolios are `NumEarnIncrease` and `DelLTI`. Let's see what these signals are, exactly, by checking the openap signal documentation.
+
+```{r}
+# Download signal doc
+signaldoc <- openap$dl_signal_doc()
+
+# show definitions of the signals with missing portfolios
+print(signaldoc %>%
+  filter(Acronym == 'NumEarnIncrease') %>%
+  pull(`Detailed.Definition`))
+
+print(signaldoc %>%
+  filter(Acronym == 'DelLTI') %>%
+  pull(`Detailed.Definition`))
+
+```
+
+So, `NumEarnIncrease` is a discrete signal that falls in the set {0,1,2,...,9}. So it's natural that it can lead to missing portfolios. Similarly, `DelLTI` shows changes in a somewhat obscure accounting number, which may bunch up around zero.
+
+The Chen-Zimmermann code handles these degenerate signals by giving extreme portfolios the "benefit of the doubt" in inequalities. See the [portfolio function](https://github.com/OpenSourceAP/CrossSection/blob/master/Portfolios/Code/01_PortfolioFunction.R) in the Chen-Zimmermann Github repo.

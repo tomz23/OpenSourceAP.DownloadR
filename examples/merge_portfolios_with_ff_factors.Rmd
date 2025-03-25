@@ -151,7 +151,7 @@ portsum_mean <- portsum %>%
   group_by(port) %>%
   summarise(
     meanret = mean(meanret),
-    tstat = mean(tstat),
+    tstat = mean(tstat, na.rm = TRUE),
     nmonth = mean(nmonth),
     datemin = mean(datemin),
     datemax = mean(datemax),

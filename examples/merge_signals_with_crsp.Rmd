@@ -205,7 +205,7 @@ One can alternatively download signals such that high signals mean high future r
 
 ```{r}
 # download signed signals
-signals_signed <- openap$dl_signal(signal_list, signed = FALSE)
+signals_signed <- openap$dl_signal(signal_list, signed = TRUE)
 ```
 
 ```{r}

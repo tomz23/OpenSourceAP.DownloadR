@@ -303,7 +303,7 @@ OpenAP <- R6::R6Class(
     #' @param signal_sign A data frame containing the signal documentation.
     #' @param signed Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.
     apply_sign_logic = function(data, predictors, signal_sign, signed = TRUE) {
-      if (!signed) {
+      if (signed) {
         # Check for CRSP signals and apply transformation
         crsp_signals <- c("Price", "Size", "STreversal")
         for (signal in predictors) {
@@ -331,7 +331,7 @@ OpenAP <- R6::R6Class(
     #' @return A data frame containing the signal data.
     #' @examples
     #' signals <- openap_instance$dl_signal(predictor = c("BM"))
-    dl_signal = function(predictor = NULL, signed = TRUE) {
+    dl_signal = function(predictor = NULL, signed = FALSE) {
       if (is.null(predictor)) {
         stop("Predictor(s) must be specified.")
       }

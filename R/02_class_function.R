@@ -322,6 +322,16 @@ OpenAP <- R6::R6Class(
     },
 
     #' @description
+    #' Merges downloaded OpenAP firm-level signals with CRSP-based signals (e.g., Size, Price, STreversal).
+    #'
+    #' @param signals Data frame containing OpenAP firm-level signals with columns \code{permno} and \code{yyyymm}.
+    #' @param crsp_data Data frame containing CRSP signals (e.g., Size, Price) with columns \code{permno} and \code{yyyymm}.
+    merge_crsp_with_signals = function(signals, crsp_data) {
+      merged_data <- left_join(signals, crsp_data, by = c("permno", "yyyymm"))
+      return(merged_data)
+    },
+
+    #' @description
     #' Downloads specific firm characteristics.
     #'
     #' @param predictor A vector of predictor names to download.

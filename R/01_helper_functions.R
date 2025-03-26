@@ -407,9 +407,3 @@ process_zip <- function(zip_path) {
     data <- fread(csv_files[1])
     return(data)
 }
-
-
-merge_crsp_with_signals = function(signals, crsp_data) {
-      merged_data <- left_join(signals, crsp_data, by = c("permno", "yyyymm"))
-      return(merged_data)
-    }

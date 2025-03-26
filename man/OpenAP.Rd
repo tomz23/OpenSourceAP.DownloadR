@@ -93,6 +93,7 @@ signal_doc <- openap_instance$dl_signal_doc()
 \item \href{#method-OpenAP-get_individual_signal_url}{\code{OpenAP$get_individual_signal_url()}}
 \item \href{#method-OpenAP-dl_signal_crsp3}{\code{OpenAP$dl_signal_crsp3()}}
 \item \href{#method-OpenAP-apply_sign_logic}{\code{OpenAP$apply_sign_logic()}}
+\item \href{#method-OpenAP-merge_crsp_with_signals}{\code{OpenAP$merge_crsp_with_signals()}}
 \item \href{#method-OpenAP-dl_signal}{\code{OpenAP$dl_signal()}}
 \item \href{#method-OpenAP-dl_all_signals}{\code{OpenAP$dl_all_signals()}}
 \item \href{#method-OpenAP-dl_signal_doc}{\code{OpenAP$dl_signal_doc()}}
@@ -266,12 +267,31 @@ applies the sign logic to the data based on the signal documentation.
 }
 }
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-OpenAP-merge_crsp_with_signals"></a>}}
+\if{latex}{\out{\hypertarget{method-OpenAP-merge_crsp_with_signals}{}}}
+\subsection{Method \code{merge_crsp_with_signals()}}{
+Merges downloaded OpenAP firm-level signals with CRSP-based signals (e.g., Size, Price, STreversal).
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$merge_crsp_with_signals(signals, crsp_data)}\if{html}{\out{</div>}}
+}
+
+\subsection{Arguments}{
+\if{html}{\out{<div class="arguments">}}
+\describe{
+\item{\code{signals}}{Data frame containing OpenAP firm-level signals with columns \code{permno} and \code{yyyymm}.}
+
+\item{\code{crsp_data}}{Data frame containing CRSP signals (e.g., Size, Price) with columns \code{permno} and \code{yyyymm}.}
+}
+\if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_signal"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-dl_signal}{}}}
 \subsection{Method \code{dl_signal()}}{
 Downloads specific firm characteristics.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal(predictor = NULL, signed = TRUE)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$dl_signal(predictor = NULL, signed = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{

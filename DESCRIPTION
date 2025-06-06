@@ -17,8 +17,15 @@ Depends:
     data.table,
     DBI,
     dplyr,
+    getPass,
     httr,
     jsonlite,
+    lubridate,
+    R6,
+    rlang,
     roxygen2,
+    RPostgres,
     rvest,
-    stringr
+    stringr,
+    tidyverse,
+    withr

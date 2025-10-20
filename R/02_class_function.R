@@ -28,6 +28,7 @@ list_release <- function(urls) {
 }
 
 urls <- list(
+  release_2025_10_url = "https://drive.google.com/drive/folders/1qQDuTsnyvWfEJR6nPBQZ8xxlq6bkLG_y",
   release_2024_10_url = "https://drive.google.com/drive/folders/1SSoHGbwgyhRwUCzLE0YWvUlS0DjLCd4k",
   release_2024_08_url = "https://drive.google.com/drive/folders/1-PqsR-tOjv3-U9DRHw85X-VznYlu-Sfc",
   release_2023_url    = "https://drive.google.com/drive/folders/1EP6oEabyZRamveGNyzYU0u6qJ-N43Qfq",

@@ -1,6 +1,4 @@
-library(httr)
-library(tidyverse)
-library(data.table)
+#' @importFrom magrittr %>%
 
 # reqest session
 get_session = function() {
@@ -30,19 +28,16 @@ get_session = function() {
 ####################
 # Parsing functions:
 ####################
-library(rvest)
-library(jsonlite)
-library(stringr)
 
 parse_google_drive_file <- function(url, content) {
   # Parse HTML content 
-  folder_soup <- read_html(content)
+  folder_soup <- rvest::read_html(content)
 
   # search for ['_DRIVE_ivd']
   encoded_data <- NULL
-  script_tags <- html_nodes(folder_soup, "script") %>% html_text()
-  encoded_data <- script_tags[str_detect(script_tags, "_DRIVE_ivd")] %>%
-    str_match("window\\['_DRIVE_ivd'\\]\\s*=\\s*'(.*?)';") %>%
+  script_tags <- rvest::html_nodes(folder_soup, "script") %>% rvest::html_text()
+  encoded_data <- script_tags[stringr::str_detect(script_tags, "_DRIVE_ivd")] %>%
+    stringr::str_match("window\\['_DRIVE_ivd'\\]\\s*=\\s*'(.*?)';") %>%
     .[2]
 
 
@@ -77,8 +72,8 @@ parse_google_drive_file <- function(url, content) {
     folder_contents <- folder_arr  
   }
   sep <- " - "  
-  title_text <- html_text(html_nodes(folder_soup, "title"))
-  splitted <- str_split(title_text, sep)[[1]]
+  title_text <- rvest::html_text(html_nodes(folder_soup, "title"))
+  splitted <- stringr::str_split(title_text, sep)[[1]]
   if (length(splitted) >= 2) {
   name <- paste(splitted[-length(splitted)], collapse = sep)
   } else {
@@ -88,7 +83,7 @@ parse_google_drive_file <- function(url, content) {
   
   # structure for the Google Drive folder
   gdrive_file <- list(
-    id = str_split(url, "/")[[1]][length(str_split(url, "/")[[1]])], 
+    id = stringr::str_split(url, "/")[[1]][length(str_split(url, "/")[[1]])], 
     name = name,
     type = "application/vnd.google-apps.folder",
     children = list()
@@ -130,8 +125,8 @@ download_and_parse_google_drive_link <- function(sess, url) {
     url <- ifelse(grepl("\\?", url), paste0(url, "&hl=en"), paste0(url, "?hl=en"))
 
     # Get the folder content
-    response <- GET(url, config = sess)
-    if (status_code(response) != 200) {
+    response <- httr::GET(url, config = sess)
+    if (httr::status_code(response) != 200) {
       stop("Failed to fetch the page. HTTP status code: ", status_code(response))
     }
 
@@ -140,7 +135,7 @@ download_and_parse_google_drive_link <- function(sess, url) {
   }
   
   # Parse the folder HTML content
-  content <- content(response, as = "text", encoding = "UTF-8")
+  content <- httr::content(response, as = "text", encoding = "UTF-8")
   parsed <- parse_google_drive_file(url, content)
   
   gdrive_file <- parsed$gdrive_file
@@ -192,13 +187,13 @@ get_individual_signal_folder_id <- function(sess, url) {
   }
   
   # Fetch the folder content
-  response <- GET(url, config = sess)
-  if (status_code(response) != 200) {
-    stop("Failed to fetch the folder page. HTTP status code: ", status_code(response))
+  response <- httr::GET(url, config = sess)
+  if (httr::status_code(response) != 200) {
+    stop("Failed to fetch the folder page. HTTP status code: ", httr::status_code(response))
   }
   
   # Parse the HTML content
-  content <- content(response, as = "text", encoding = "UTF-8")
+  content <- httr::content(response, as = "text", encoding = "UTF-8")
   parsed <- parse_google_drive_file(url, content)
   gdrive_file <- parsed$gdrive_file
   id_name_type_iter <- parsed$id_name_type_iter
@@ -278,26 +273,26 @@ get_directory_structure <- function(gdrive_file, visited = character()) {
 # adress confirmation message when downloading large data
 get_url_from_gdrive_confirmation <- function(contents) {
   # Parse the HTML content
-  soup <- read_html(contents)
+  soup <- rvest::read_html(contents)
 
   # Find the download form and its action URL
-  form <- html_node(soup, "form#download-form")
+  form <- rvest::html_node(soup, "form#download-form")
   if (is.null(form)) {
     stop("Download form not found in the HTML content.")
   }
 
-  action <- html_attr(form, "action")
+  action <- rvest::html_attr(form, "action")
   if (is.null(action)) {
     stop("Form action URL not found.")
   }
 
   # Extract hidden input fields
-  inputs <- html_nodes(form, "input[type='hidden']")
+  inputs <- rvest::html_nodes(form, "input[type='hidden']")
   params <- sapply(inputs, function(input) {
-    name <- html_attr(input, "name")
-    value <- html_attr(input, "value")
+    name <- rvest::html_attr(input, "name")
+    value <- rvest::html_attr(input, "value")
     if (!is.null(name) && !is.null(value)) {
-      paste0(name, "=", URLencode(value, reserved = TRUE))
+      paste0(name, "=", utils::URLencode(value, reserved = TRUE))
     } else {
       NULL
     }
@@ -345,27 +340,27 @@ get_name_id_map <- function(url) {
   df <- do.call(rbind, lapply(directory_structure, function(x) {
     data.frame(file_id = x[1], name = x[2], stringsAsFactors = FALSE)
   })) %>%
-    filter(!grepl("xlsx$|docx$|txt$", name)) %>%
-    mutate(
+    dplyr::filter(!grepl("xlsx$|docx$|txt$", name)) %>%
+    dplyr::mutate(
       full_name = ifelse(is.na(file_id), name, paste0(name, "/", lag(name, default = ""))),
       file_id = ifelse(!is.na(file_id), paste0(url_prefix, file_id), NA)
     ) %>%
-    filter(!is.na(file_id)) %>%
-    mutate(download_name = datasets_map[name]) %>%
-    filter(!is.na(download_name))
+    dplyr::filter(!is.na(file_id)) %>%
+    dplyr::mutate(download_name = datasets_map[name]) %>%
+    dplyr::filter(!is.na(download_name))
   
   # Process individual signals
   signal_folder_id <- get_individual_signal_folder_id(sess, url)
   signal_folder_url <- paste0("https://drive.google.com/embeddedfolderview?id=", signal_folder_id)
-  signal_response <- GET(signal_folder_url)
-  signal_text <- content(signal_response, as = "text", encoding = "UTF-8")
+  signal_response <- httr::GET(signal_folder_url)
+  signal_text <- httr::content(signal_response, as = "text", encoding = "UTF-8")
   
   # Extract signal file names and IDs
   signal_matches <- data.frame(
-    signal = str_extract_all(signal_text, '<div class="flip-entry-title">(.*?).csv</div>')[[1]],
-    file_id = str_extract_all(signal_text, 'https://drive\\.google\\.com/file/d/([\\w-]{25,})/view\\?usp=drive_web')[[1]]
+    signal = stringr::str_extract_all(signal_text, '<div class="flip-entry-title">(.*?).csv</div>')[[1]],
+    file_id = stringr::str_extract_all(signal_text, 'https://drive\\.google\\.com/file/d/([\\w-]{25,})/view\\?usp=drive_web')[[1]]
   ) %>%
-    mutate(file_id = paste0(url_prefix, file_id))
+    dplyr::mutate(file_id = paste0(url_prefix, file_id))
   
   return(list(main = df, signals = signal_matches))
 }
@@ -378,8 +373,8 @@ get_name_id_map <- function(url) {
 
 get_readable_link <- function(url) {
   sess <- get_session()
-  response <- GET(url, config = sess)
-  readable_link <- get_url_from_gdrive_confirmation(content(response, as = "text", encoding = "UTF-8"))
+  response <- httr::GET(url, config = sess)
+  readable_link <- get_url_from_gdrive_confirmation(httr::content(response, as = "text", encoding = "UTF-8"))
   return(readable_link)
 }
 
@@ -394,7 +389,7 @@ process_zip <- function(zip_path) {
     output_dir <- tempdir()
     
     # Extract files and get their paths
-    extracted_files <- unzip(zip_path, exdir = output_dir)
+    extracted_files <- utils::unzip(zip_path, exdir = output_dir)
     #print(extracted_files)  
 
     # Locate CSV files from the extracted files
@@ -404,6 +399,6 @@ process_zip <- function(zip_path) {
     }
 
     # Read the first CSV file
-    data <- fread(csv_files[1])
+    data <- data.table::fread(csv_files[1])
     return(data)
 }

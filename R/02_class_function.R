@@ -36,10 +36,6 @@ urls <- list(
 )
 
 
-library(roxygen2)
-library(DBI)
-library(dplyr)
-
 #' OpenAP Download
 #'
 #' @description
@@ -205,7 +201,7 @@ OpenAP <- R6::R6Class(
         } else {
             # Handle direct CSV files
             data <- tryCatch(
-                read.csv(temp_file),
+                utils::read.csv(temp_file),
                 error = function(e) stop("Error reading CSV file: ", e$message)
             )
         }
@@ -218,8 +214,8 @@ OpenAP <- R6::R6Class(
         # Order the data
         data <- data[order(data$signalname, data$port, data$date), ] %>%
           # make sure data are in tibble format and date correctly formatted
-          mutate(date = lubridate::ymd(date)) %>%
-          tibble()
+          dplyr::mutate(date = lubridate::ymd(date)) %>%
+          dplyr::tibble()
         return(data)
     },
 
@@ -237,7 +233,7 @@ OpenAP <- R6::R6Class(
 
       # Filter for the specific signal
       signal_entry <- self$individual_signal_id_map %>%
-        filter(signal == signal_name)
+        dplyr::filter(signal == signal_name)
 
       if (nrow(signal_entry) == 0) {
         stop(paste("Signal name", signal_name, "not found in individual_signal_id_map."))
@@ -269,7 +265,7 @@ OpenAP <- R6::R6Class(
         pass = Sys.getenv("WRDS_PASS")
       }
 
-      connect <- dbConnect(
+      connect <- DBI::dbConnect(
         RPostgres::Postgres(),
         host = 'wrds-pgdata.wharton.upenn.edu',
         port = 9737,
@@ -280,19 +276,19 @@ OpenAP <- R6::R6Class(
       )
 
       query <- "SELECT PERMNO, DATE, PRC, RET, SHROUT FROM CRSP.MSF"
-      crsp_data <- dbGetQuery(connect, query)
-      dbDisconnect(connect)
+      crsp_data <- DBI::dbGetQuery(connect, query)
+      DBI::dbDisconnect(connect)
 
-      processed_data <- crsp_data  |>
-        mutate(
+      processed_data <- crsp_data  %>%
+        dplyr::mutate(
           yyyymm = as.integer(format(date, "%Y%m")),
           Price = -log(abs(prc)),
           Size = -log(abs(prc * shrout / 1000)),
           STreversal = -coalesce(ret, 0)
         ) |>
-      select(permno, yyyymm, all_of(requested_crsp_signals)) %>%
+      dplyr::select(permno, yyyymm, all_of(requested_crsp_signals)) %>%
         # make sure data are in tibble format
-        tibble()
+        dplyr::tibble()
 
       return(processed_data)
     },
@@ -328,7 +324,7 @@ OpenAP <- R6::R6Class(
     #' @param signals Data frame containing OpenAP firm-level signals with columns \code{permno} and \code{yyyymm}.
     #' @param crsp_data Data frame containing CRSP signals (e.g., Size, Price) with columns \code{permno} and \code{yyyymm}.
     merge_crsp_with_signals = function(signals, crsp_data) {
-      merged_data <- left_join(signals, crsp_data, by = c("permno", "yyyymm"))
+      merged_data <- dplyr::left_join(signals, crsp_data, by = c("permno", "yyyymm"))
       return(merged_data)
     },
 
@@ -364,9 +360,9 @@ OpenAP <- R6::R6Class(
           }
 
           temp_file <- tempfile()
-          download.file(url, temp_file, mode = "wb")
+          utils::download.file(url, temp_file, mode = "wb")
           signal_data <- tryCatch(
-            read.csv(temp_file),
+            utils::read.csv(temp_file),
             error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
           )
 
@@ -416,7 +412,7 @@ OpenAP <- R6::R6Class(
       withr::with_options(
         new = list(timeout = 600),
         code = {
-          download.file(url, temp_file, mode = "wb")
+          utils::download.file(url, temp_file, mode = "wb")
         }
       )
 
@@ -428,7 +424,7 @@ OpenAP <- R6::R6Class(
         data <- process_zip(temp_file)
       } else {
         data <- tryCatch(
-          read.csv(temp_file),
+          utils::read.csv(temp_file),
           error = function(e) stop("Error reading 'firm_char' dataset:", e$message)
         )
       }
@@ -448,7 +444,7 @@ OpenAP <- R6::R6Class(
     #' signal_doc <- openap_instance$dl_signal_doc()
     dl_signal_doc = function() {
       url <- self$get_url("signal_doc")
-      data <- read.csv(url)
+      data <- utils::read.csv(url)
       return(data)
     }
 

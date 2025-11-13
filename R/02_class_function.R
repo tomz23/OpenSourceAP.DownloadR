@@ -293,12 +293,7 @@ OpenAP <- R6::R6Class(
       return(processed_data)
     },
 
-    #' @description
-    #' applies the sign logic to the data based on the signal documentation.
-    #' @param data The data frame to apply the sign logic to.
-    #' @param predictors A vector of predictor names.
-    #' @param signal_sign A data frame containing the signal documentation.
-    #' @param signed Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.
+    #' @keywords internal
     apply_sign_logic = function(data, predictors, signal_sign, signed = TRUE) {
       if (signed) {
         # Check for CRSP signals and apply transformation
@@ -318,11 +313,7 @@ OpenAP <- R6::R6Class(
       return(data)
     },
 
-    #' @description
-    #' Merges downloaded OpenAP firm-level signals with CRSP-based signals (e.g., Size, Price, STreversal).
-    #'
-    #' @param signals Data frame containing OpenAP firm-level signals with columns \code{permno} and \code{yyyymm}.
-    #' @param crsp_data Data frame containing CRSP signals (e.g., Size, Price) with columns \code{permno} and \code{yyyymm}.
+    #' @keywords internal
     merge_crsp_with_signals = function(signals, crsp_data) {
       merged_data <- dplyr::left_join(signals, crsp_data, by = c("permno", "yyyymm"))
       return(merged_data)

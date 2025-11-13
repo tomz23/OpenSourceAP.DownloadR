@@ -383,9 +383,15 @@ get_readable_link <- function(url) {
   return(readable_link)
 }
 
-
 # Test 
 #get_readable_link("https://drive.google.com/uc?id=1T-nogu88A4hcFXijjftSO41K5P4Hj27y")  #success 
+
+
+
+is_html_file <- function(path) {
+  txt <- readChar(path, nchars = file.info(path)$size, useBytes = TRUE)
+  grepl("<html|<!DOCTYPE html|<form", txt, ignore.case = TRUE)
+}
 
 
 

@@ -365,9 +365,23 @@ OpenAP <- R6::R6Class(
 
           temp_file <- tempfile()
           download.file(url, temp_file, mode = "wb")
+
+          # Detect HTML warning page
+          if (is_html_file(temp_file)) {
+
+            html <- paste(readLines(temp_file, warn = FALSE), collapse = "\n")
+            download_url <- get_url_from_gdrive_confirmation(html)
+
+            # Re-download actual CSV
+            download.file(download_url, temp_file, mode = "wb")
+          }
+
+          # read correct CSV
           signal_data <- tryCatch(
             read.csv(temp_file),
-            error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))
+            error = function(e) stop(
+              paste("Error reading data for signal:", signal_name, "-", e$message)
+            )
           )
 
           # Merge OpenAP data into result

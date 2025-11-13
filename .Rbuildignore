@@ -1,2 +1,2 @@
-^OpenSourceAP\.DownloadR\.Rproj$
-^\.Rproj\.user$
+^dev$
+^dev/.*$

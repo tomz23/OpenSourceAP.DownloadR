@@ -330,7 +330,7 @@ OpenAP <- R6::R6Class(
     #' @examples
     #' signals <- openap_instance$dl_signal(predictor = c("BM"))
     dl_signal = function(predictor = NULL, signed = FALSE) {
-      if (is.null(predictor)) {
+      if (is.null(predictor) || identical(predictor, character(0))) {
         stop("Predictor(s) must be specified.")
       }
 

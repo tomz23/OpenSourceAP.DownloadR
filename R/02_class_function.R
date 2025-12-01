@@ -72,7 +72,7 @@ OpenAP <- R6::R6Class(
     #'
     #' @param release_year
     #'
-    #' @examples
+    #' @examplesIf interactive()
     #' openap_instance <- OpenAP$new(release_year = "2023")
     initialize = function(release_year = NULL) {
       # Get the list of available releases (with identifiers like "2024_08", "2023", etc.)
@@ -128,7 +128,7 @@ OpenAP <- R6::R6Class(
     #' @description
     #' Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
     #'
-    #' @examples
+    #' @examplesIf interactive()
     #' openap_instance$list_port()
     list_port = function() {
       print(self$name_id_map %>%
@@ -141,8 +141,10 @@ OpenAP <- R6::R6Class(
     #'
     #' @param data_name The name of the Portfolio.
     #'
-    #' @examples
+    #' @examplesIf interactive()
     #' openap_instance$get_url("nyse")
+    #' 
+    #' @keywords internal
     get_url = function(data_name) {
       # Filter the dataset for matching download_name
       data_entry <- self$name_id_map[self$name_id_map$download_name == data_name, ]
@@ -175,7 +177,7 @@ OpenAP <- R6::R6Class(
     #'
     #' @param predictor A vector of predictor names to filter (optional).
     #'
-    #' @examples
+    #' @examplesIf interactive()
     #' data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
     dl_port = function(data_name, predictor = NULL) {
         if (is.null(self$name_id_map)) {
@@ -223,8 +225,10 @@ OpenAP <- R6::R6Class(
     #' Retrieves the URL for an individual signal based on its name.
     #' @param signal_name The name of the signal to retrieve.
     #' @return A string representing the URL of the signal.
-    #' @examples
+    #' @examplesIf interactive()
     #' url <- openap_instance$get_individual_signal_url("Accruals.csv")
+    #' 
+    #' @keywords internal
     get_individual_signal_url = function(signal_name) {
       # Check if individual_signal_id_map exists
       if (is.null(self$individual_signal_id_map)) {
@@ -247,6 +251,8 @@ OpenAP <- R6::R6Class(
     #' @description
     #' Is being used in "dl_signal()" to download CRSP signals. Requires WRDS credentials.
     #' @param requested_crsp_signals A vector of CRSP signals to download.
+    #' 
+    #' @keywords internal
     dl_signal_crsp3 = function(requested_crsp_signals = c("Price", "Size", "STreversal")) {
 
       # Ensure requested_crsp_signals is always assigned the default if NULL
@@ -293,6 +299,14 @@ OpenAP <- R6::R6Class(
       return(processed_data)
     },
 
+    #' @description
+    #' applies the sign logic to the data based on the signal documentation.
+    #'
+    #' @param data The data frame to apply the sign logic to.
+    #' @param predictors A vector of predictor names.
+    #' @param signal_sign A data frame containing the signal documentation.
+    #' @param signed Logical; whether to apply signed transformation based on signal documentation. 
+    #'   Default is TRUE.
     #' @keywords internal
     apply_sign_logic = function(data, predictors, signal_sign, signed = TRUE) {
       if (signed) {
@@ -313,6 +327,14 @@ OpenAP <- R6::R6Class(
       return(data)
     },
 
+    #' @description
+    #' Merges downloaded OpenAP firm-level signals with CRSP-based signals 
+    #' (e.g., Size, Price, STreversal).
+    #'
+    #' @param signals Data frame containing OpenAP firm-level signals with columns 
+    #'   \code{permno} and \code{yyyymm}.
+    #' @param crsp_data Data frame containing CRSP signals (e.g., Size, Price) with columns 
+    #'   \code{permno} and \code{yyyymm}.
     #' @keywords internal
     merge_crsp_with_signals = function(signals, crsp_data) {
       merged_data <- dplyr::left_join(signals, crsp_data, by = c("permno", "yyyymm"))
@@ -327,7 +349,7 @@ OpenAP <- R6::R6Class(
     #' @param signed Logical; whether to apply signed transformation based on signal documentation.
     #'
     #' @return A data frame containing the signal data.
-    #' @examples
+    #' @examplesIf interactive()
     #' signals <- openap_instance$dl_signal(predictor = c("BM"))
     dl_signal = function(predictor = NULL, signed = FALSE) {
       if (is.null(predictor) || identical(predictor, character(0))) {
@@ -394,7 +416,7 @@ OpenAP <- R6::R6Class(
     #'
     #' @return A data frame containing all firm level characteristics.
     #'
-    #' @examples
+    #' @examplesIf interactive()
     #' signals_data <- openap_instance$dl_all_signals()
     dl_all_signals = function(signed = FALSE) {
       url <- self$get_url("firm_char")
@@ -431,7 +453,7 @@ OpenAP <- R6::R6Class(
     #' @description
     #' Downloads the signal documentation CSV for the release.
     #' @return A data frame containing the signal documentation.
-    #' @examples
+    #' @examplesIf interactive()
     #' signal_doc <- openap_instance$dl_signal_doc()
     dl_signal_doc = function() {
       url <- self$get_url("signal_doc")

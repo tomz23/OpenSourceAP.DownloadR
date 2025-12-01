@@ -63,7 +63,7 @@ parse_google_drive_file <- function(url, content) {
   for (i in seq_along(matched_strings[[1]])) {
     decoded_data <- sub(matched_strings[[1]][i], decoded_matches[i], decoded_data, fixed = TRUE)
   }
-  folder_arr <- fromJSON(decoded_data)
+  folder_arr <- jsonlite::fromJSON(decoded_data)
 
   # Folder name and contents extraction
   if (is.null(folder_arr[[1]])) {
@@ -72,7 +72,7 @@ parse_google_drive_file <- function(url, content) {
     folder_contents <- folder_arr  
   }
   sep <- " - "  
-  title_text <- rvest::html_text(html_nodes(folder_soup, "title"))
+  title_text <- rvest::html_text(rvest::html_nodes(folder_soup, "title"))
   splitted <- stringr::str_split(title_text, sep)[[1]]
   if (length(splitted) >= 2) {
   name <- paste(splitted[-length(splitted)], collapse = sep)
@@ -83,7 +83,7 @@ parse_google_drive_file <- function(url, content) {
   
   # structure for the Google Drive folder
   gdrive_file <- list(
-    id = stringr::str_split(url, "/")[[1]][length(str_split(url, "/")[[1]])], 
+    id = stringr::str_split(url, "/")[[1]][length(stringr::str_split(url, "/")[[1]])], 
     name = name,
     type = "application/vnd.google-apps.folder",
     children = list()
@@ -127,7 +127,7 @@ download_and_parse_google_drive_link <- function(sess, url) {
     # Get the folder content
     response <- httr::GET(url, config = sess)
     if (httr::status_code(response) != 200) {
-      stop("Failed to fetch the page. HTTP status code: ", status_code(response))
+      stop("Failed to fetch the page. HTTP status code: ", httr::status_code(response))
     }
 
     # Update URL in case of redirection
@@ -299,7 +299,7 @@ get_url_from_gdrive_confirmation <- function(contents) {
   })
   
   # Construct the full URL with query parameters
-  query <- paste(na.omit(params), collapse = "&")
+  query <- paste(stats::na.omit(params), collapse = "&")
   full_url <- paste0(action, "?", query)
   
   return(full_url)
@@ -342,7 +342,7 @@ get_name_id_map <- function(url) {
   })) %>%
     dplyr::filter(!grepl("xlsx$|docx$|txt$", name)) %>%
     dplyr::mutate(
-      full_name = ifelse(is.na(file_id), name, paste0(name, "/", lag(name, default = ""))),
+      full_name = ifelse(is.na(file_id), name, paste0(name, "/", stats::lag(name, default = ""))),
       file_id = ifelse(!is.na(file_id), paste0(url_prefix, file_id), NA)
     ) %>%
     dplyr::filter(!is.na(file_id)) %>%

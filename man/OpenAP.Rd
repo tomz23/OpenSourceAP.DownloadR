@@ -21,55 +21,32 @@ The package enables users to access two primary types of data:
 Learn more about OpenAP: \href{https://openassetpricing.com}{Data webside} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
 }
 \examples{
-
-## ------------------------------------------------
-## Method `OpenAP$new`
-## ------------------------------------------------
-
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 openap_instance <- OpenAP$new(release_year = "2023")
-
-## ------------------------------------------------
-## Method `OpenAP$list_port`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 openap_instance$list_port()
-
-## ------------------------------------------------
-## Method `OpenAP$get_url`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 openap_instance$get_url("nyse")
-
-## ------------------------------------------------
-## Method `OpenAP$dl_port`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
-
-## ------------------------------------------------
-## Method `OpenAP$get_individual_signal_url`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 url <- openap_instance$get_individual_signal_url("Accruals.csv")
-
-## ------------------------------------------------
-## Method `OpenAP$dl_signal`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 signals <- openap_instance$dl_signal(predictor = c("BM"))
-
-## ------------------------------------------------
-## Method `OpenAP$dl_all_signals`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 signals_data <- openap_instance$dl_all_signals()
-
-## ------------------------------------------------
-## Method `OpenAP$dl_signal_doc`
-## ------------------------------------------------
-
+\dontshow{\}) # examplesIf}
+\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
 signal_doc <- openap_instance$dl_signal_doc()
+\dontshow{\}) # examplesIf}
 }
+\keyword{internal}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{
@@ -117,14 +94,6 @@ Loads mappings, individual signal IDs and signal documentation.
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{openap_instance <- OpenAP$new(release_year = "2023")
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-list_port"></a>}}
@@ -133,14 +102,6 @@ Loads mappings, individual signal IDs and signal documentation.
 Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$list_port()}\if{html}{\out{</div>}}
-}
-
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{openap_instance$list_port()
-}
-\if{html}{\out{</div>}}
-
 }
 
 }
@@ -160,14 +121,6 @@ Retrieves the URL for a specific dataset based on its name.
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{openap_instance$get_url("nyse")
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_port"></a>}}
@@ -187,14 +140,6 @@ Downloads portfolio data for a specified data set and optionally filters by pred
 }
 \if{html}{\out{</div>}}
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-get_individual_signal_url"></a>}}
@@ -215,14 +160,6 @@ Retrieves the URL for an individual signal based on its name.
 \subsection{Returns}{
 A string representing the URL of the signal.
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{url <- openap_instance$get_individual_signal_url("Accruals.csv")
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_signal_crsp3"></a>}}
@@ -261,7 +198,8 @@ applies the sign logic to the data based on the signal documentation.
 
 \item{\code{signal_sign}}{A data frame containing the signal documentation.}
 
-\item{\code{signed}}{Logical; whether to apply signed transformation based on signal documentation. Default is TRUE.}
+\item{\code{signed}}{Logical; whether to apply signed transformation based on signal documentation.
+Default is TRUE.}
 }
 \if{html}{\out{</div>}}
 }
@@ -270,7 +208,8 @@ applies the sign logic to the data based on the signal documentation.
 \if{html}{\out{<a id="method-OpenAP-merge_crsp_with_signals"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-merge_crsp_with_signals}{}}}
 \subsection{Method \code{merge_crsp_with_signals()}}{
-Merges downloaded OpenAP firm-level signals with CRSP-based signals (e.g., Size, Price, STreversal).
+Merges downloaded OpenAP firm-level signals with CRSP-based signals
+(e.g., Size, Price, STreversal).
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$merge_crsp_with_signals(signals, crsp_data)}\if{html}{\out{</div>}}
 }
@@ -278,9 +217,11 @@ Merges downloaded OpenAP firm-level signals with CRSP-based signals (e.g., Size,
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{signals}}{Data frame containing OpenAP firm-level signals with columns \code{permno} and \code{yyyymm}.}
+\item{\code{signals}}{Data frame containing OpenAP firm-level signals with columns
+\code{permno} and \code{yyyymm}.}
 
-\item{\code{crsp_data}}{Data frame containing CRSP signals (e.g., Size, Price) with columns \code{permno} and \code{yyyymm}.}
+\item{\code{crsp_data}}{Data frame containing CRSP signals (e.g., Size, Price) with columns
+\code{permno} and \code{yyyymm}.}
 }
 \if{html}{\out{</div>}}
 }
@@ -306,14 +247,6 @@ Downloads specific firm characteristics.
 \subsection{Returns}{
 A data frame containing the signal data.
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{signals <- openap_instance$dl_signal(predictor = c("BM"))
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_all_signals"></a>}}
@@ -334,14 +267,6 @@ Downloads all firm level characteristics from the release folder.
 \subsection{Returns}{
 A data frame containing all firm level characteristics.
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{signals_data <- openap_instance$dl_all_signals()
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_signal_doc"></a>}}
@@ -355,14 +280,6 @@ Downloads the signal documentation CSV for the release.
 \subsection{Returns}{
 A data frame containing the signal documentation.
 }
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{signal_doc <- openap_instance$dl_signal_doc()
-}
-\if{html}{\out{</div>}}
-
-}
-
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-clone"></a>}}

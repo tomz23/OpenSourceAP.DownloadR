@@ -1,4 +1,5 @@
 library(testthat)
+testthat::skip_if_not_installed("httptest")
 library(httptest)
 library(OpenSourceAP.DownloadR)
 

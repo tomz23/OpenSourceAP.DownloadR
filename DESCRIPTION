@@ -16,19 +16,18 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: 
-    data.table,
-    DBI,
-    dplyr,
-    getPass,
+VignetteBuilder: knitr
+Imports:
     httr,
-    jsonlite,
-    lubridate,
-    R6,
-    rlang,
-    roxygen2,
-    RPostgres,
     rvest,
     stringr,
-    tidyverse,
-    withr
-VignetteBuilder: knitr
+    jsonlite,
+    magrittr,
+    dplyr,
+    data.table,
+    R6,
+    withr,
+    lubridate,
+    DBI,
+    RPostgres,
+    getPass

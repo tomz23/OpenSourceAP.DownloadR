@@ -1,32 +1,41 @@
+###########################
+# Tests:
+###########################
+
+# Installing the package
+devtools::install()
+#devtools::build()
+
 library(OpenSourceAP.DownloadR)
+# documentation
+?OpenAP
 
-# Open an instance to the OpenAP dataset and show available releases:
-openap <- OpenAP$new()
+# initialize OpenAP
+openap_instance <- OpenAP$new()
+#openap_instance <- OpenAP$new("2024_10")
+#openap_instance <- OpenAP$new(release_year = "2024_10")
+
+# ==========
+# list available datasets:
+# ==========
+openap_instance$list_port()
 
 
 # ==========
-# List available portfolios
+# Download SignalDoc.csv 
 # ==========
-openap$list_port()
-
-
-# ==========
-# Download SignalDoc.csv
-# ==========
-df = openap$dl_signal_doc()
-
+signal_doc = openap_instance$dl_signal_doc()
 
 # ==========
 # Portfolios -> Full Sets OP -> PredictorPortsFull.csv
 # ==========
 
-# Download entire file
-df = openap$dl_port('op')
+# Download entier file 
+data <- openap_instance$dl_port("op")
 
 # Download specific predictors (can be single or multiple predictors)
-df = openap$dl_port('op', 'AM')
-df = openap$dl_port('op', c('AM', 'Mom12m'))
-
+data2 <- openap_instance$dl_port("op", predictor = c("AM"))
+data3 <- openap_instance$dl_port("op", predictor = c("AM", "Mom12m"))
 
 
 # ==========
@@ -35,25 +44,35 @@ df = openap$dl_port('op', c('AM', 'Mom12m'))
 # Portfolios -> Full Sets Alt -> PredictorAltPorts_LiqScreen_NYSEonly.zip
 # ==========
 
-# Download entire file
-df = openap$dl_port('deciles_ew')
-df = openap$dl_port('deciles_vw')
-df = openap$dl_port('nyse')
+# Download entier file
+data4 <- openap_instance$dl_port("deciles_ew")
+data5 <- openap_instance$dl_port("deciles_vw")
+data6 <- openap_instance$dl_port("port_nyse")
 
 # Download specific predictors (can be single or multiple predictors)
-df = openap$dl_port('deciles_ew', 'Accruals')
-df = openap$dl_port('deciles_ew', c('BM', 'Mom6m'))
-
+data7 <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
+data8 <- openap_instance$dl_port("deciles_ew", predictor = c("BM", "Mom6m"))
 
 
 # ==========
-# Firm Level Characteristics
+# Firm Level Characteristics -> Full Sets -> signed_predictors_dl_wide.zip
 # ==========
 
-# Download all firm characteristics (signed)
-df = openap$dl_all_signals()
+# Download all firm characteristics
+# Sys.setenv(WRDS_USER = "XXX", WRDS_PASS = "XXX")
+signals_data1 <- openap_instance$dl_all_signals()
 
-# Download specific firm characteristics
-df = openap$dl_signal(c('BM', 'AssetGrowth'))
-df = openap$dl_signal(c('BM', 'AssetGrowth', 'Size'))  # Requires WRDS login
+# Download specific firm characteristics and signed/not signed
+data9 <- openap_instance$dl_signal("Accruals")
+data10 <- openap_instance$dl_signal("Accruals", signed = FALSE)
 
+data11 <- openap_instance$dl_signal("BM")
+data12 <- openap_instance$dl_signal("BM", signed = FALSE)
+
+# Dowload specific firm characteristics with WRDS connection
+data13 <- openap_instance$dl_signal(c("Accruals", "STreversal"))
+data14 <- openap_instance$dl_signal(c("Accruals", "STreversal"), signed = FALSE)
+
+# Only WRDS
+data15 <- openap_instance$dl_signal("STreversal")
+data16 <- openap_instance$dl_signal(c("STreversal", "Size"))

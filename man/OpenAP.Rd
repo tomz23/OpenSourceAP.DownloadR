@@ -18,32 +18,51 @@ The package enables users to access two primary types of data:
 }
 }
 
-Learn more about OpenAP: \href{https://openassetpricing.com}{Data webside} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
+Learn more about OpenAP: \href{https://openassetpricing.com}{Data website} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
 }
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-openap_instance <- OpenAP$new(release_year = "2023")
+# Initialize OpenAP instance (latest release)
+openap <- OpenAP$new()
+
+# Initialize specific release
+openap <- OpenAP$new(release_year = "2024_10")
 \dontshow{\}) # examplesIf}
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-openap_instance$list_port()
+# list available portfolios
+openap$list_port()
 \dontshow{\}) # examplesIf}
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-openap_instance$get_url("nyse")
+# Download entire portfolio file
+df <- openap$dl_port("op")
+
+# Download single or multiple specific predictors
+df <- openap$dl_port("op", predictor = "Accruals")
+df <- openap$dl_port("op", predictor = c("Accruals", "Mom12m"))
 \dontshow{\}) # examplesIf}
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
+# Download a single firm characteristic
+df <- openap$dl_signal("BM")
+
+# Download multiple firm characteristics
+df <- openap$dl_signal(c("BM", "Accruals"))
+
+# Download WRDS signals (account required)
+df <- openap$dl_signal("STreversal")
+
+# Mix WRDS and OpenAP signals
+df <- openap$dl_signal(c("BM", "STreversal"))
+
+# Download unsigned versions
+df <- openap$dl_signal("BM", signed = FALSE)
 \dontshow{\}) # examplesIf}
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-url <- openap_instance$get_individual_signal_url("Accruals.csv")
+# download all signals available
+signals_data <- openap$dl_all_signals()
 \dontshow{\}) # examplesIf}
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-signals <- openap_instance$dl_signal(predictor = c("BM"))
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-signals_data <- openap_instance$dl_all_signals()
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-signal_doc <- openap_instance$dl_signal_doc()
+# load signal documentation
+signal_doc <- openap$dl_signal_doc()
 \dontshow{\}) # examplesIf}
 }
 \keyword{internal}
@@ -57,6 +76,8 @@ signal_doc <- openap_instance$dl_signal_doc()
 \item{\code{signal_sign}}{The direction or "sign" of the signal (i.e. positive or negative).}
 
 \item{\code{url}}{The base URL for downloading OpenAP data.}
+
+\item{\code{mock}}{Logical; if TRUE, network calls are skipped and mock data is returned for all download functions}
 }
 \if{html}{\out{</div>}}
 }
@@ -84,13 +105,15 @@ signal_doc <- openap_instance$dl_signal_doc()
 Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
 Loads mappings, individual signal IDs and signal documentation.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{OpenAP$new(release_year = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{OpenAP$new(release_year = NULL, mock = FALSE)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{release_year}}{}
+\item{\code{release_year}}{release_year Optional release identifier, e.g. \code{"2024_08"}.}
+
+\item{\code{mock}}{Logical; if TRUE, network initialization is skipped and mock}
 }
 \if{html}{\out{</div>}}
 }

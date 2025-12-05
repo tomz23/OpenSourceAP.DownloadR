@@ -100,7 +100,7 @@ OpenAP <- R6::R6Class(
         return(invisible(self))
       }
 
-      # Get the list of available releases (with identifiers like "2024_08", "2023", etc.)
+      # Get the list of available releases 
       releases <- list_release(urls)
 
       if (is.null(release_year)) {
@@ -109,8 +109,6 @@ OpenAP <- R6::R6Class(
         message("No release specified. Defaulting to latest release: ",
                 selected$release_id)
       } else {
-        # Allow the user to pass a string like "2024_08" or a numeric value like 2022.
-        # If a numeric value is provided, convert it to character.
         if (is.numeric(release_year)) {
           release_year <- as.character(release_year)
         }
@@ -123,14 +121,12 @@ OpenAP <- R6::R6Class(
         message("Selected release: ", selected$release_id)
       }
 
-      # Build the key to extract the URL from the urls list
+      # Build key to extract the URL from the urls list
       release_key <- paste0("release_", selected$release_id, "_url")
       release_url <- urls[[release_key]]
 
-      # Store the selected URL
       self$url <- release_url
 
-      # Extract and process mappings
       mappings <- get_name_id_map(release_url)
       self$name_id_map <- mappings$main
 
@@ -145,7 +141,7 @@ OpenAP <- R6::R6Class(
         stringsAsFactors = FALSE
       )
 
-      # Process the signal documentation
+      # Process signal documentation
       signal_doc_url <- self$get_url("signal_doc")
       self$signal_sign <- read.csv(signal_doc_url)
     },
@@ -345,7 +341,6 @@ OpenAP <- R6::R6Class(
           STreversal = -coalesce(ret, 0)
         ) |>
       dplyr::select(permno, yyyymm, all_of(requested_crsp_signals)) %>%
-        # make sure data are in tibble format
         dplyr::tibble()
 
       return(processed_data)
@@ -422,7 +417,7 @@ OpenAP <- R6::R6Class(
       stop("Predictor(s) must be specified.")
       }
 
-      # Then mock mode
+      # mock mode
       if (isTRUE(self$mock)) {
         df <- data.frame(
           permno = c(1,2),

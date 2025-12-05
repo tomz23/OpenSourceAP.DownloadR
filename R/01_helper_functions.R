@@ -49,14 +49,10 @@ parse_google_drive_file <- function(url, content) {
   matched_strings <- regmatches(encoded_data, matches)
 
   decoded_matches <- sapply(matched_strings[[1]], function(match) {
-  #print(paste("Raw match:", match))  
-  hex_digits <- sub("\\\\x", "", match)  # Remove `\\x`
-  #print(paste("Hex digits:", hex_digits)) 
-  numeric_value <- strtoi(hex_digits, 16L)  # Convert to numeric
-  #print(paste("Numeric value:", numeric_value))  
-  character <- rawToChar(as.raw(numeric_value))  # Convert to character
-  #print(paste("Decoded character:", character))  
-  return(character)
+      hex_digits <- sub("\\\\x", "", match)  # Remove `\\x`
+    numeric_value <- strtoi(hex_digits, 16L)  # Convert to numeric
+    character <- rawToChar(as.raw(numeric_value))  # Convert to character
+    return(character)
   })
 
   decoded_data <- encoded_data
@@ -96,9 +92,9 @@ parse_google_drive_file <- function(url, content) {
   id_name_type_iter <- lapply(entries, function(e) {
     if (length(e) >= 4) {  # Ensure the entry has at least 4 elements
       list(
-        id = e[[1]],      # Extract the ID
-        name = e[[3]],    # Extract the file name
-        type = e[[4]]     # Extract the type
+        id = e[[1]],      # Extract ID
+        name = e[[3]],    # Extract file name
+        type = e[[4]]     # Extract type
       )
     } else {
       NULL
@@ -112,7 +108,6 @@ parse_google_drive_file <- function(url, content) {
 
 # Test
 #parse_google_drive_file(url, content)
-# success! (warning can be ignored here)
 
 
 

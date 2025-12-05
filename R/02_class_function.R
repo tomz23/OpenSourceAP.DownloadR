@@ -49,7 +49,7 @@ urls <- list(
 #' 2. **Firm Characteristics**:
 #'    - Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).
 #'
-#'Learn more about OpenAP: [Data website](https://openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | [Publication](https://www.nowpublishers.com/article/Details/CFR-0112)
+#'Learn more about OpenAP: [Data website](https://www.openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | [Publication](https://www.nowpublishers.com/article/Details/CFR-0112)
 #'
 #' @field name_id_map A mapping between names and their corresponding IDs in the OpenAP database.
 #' @field individual_signal_id_map A mapping of unique identifiers for individual signals.

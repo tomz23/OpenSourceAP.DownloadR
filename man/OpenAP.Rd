@@ -18,7 +18,7 @@ The package enables users to access two primary types of data:
 }
 }
 
-Learn more about OpenAP: \href{https://openassetpricing.com}{Data website} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
+Learn more about OpenAP: \href{https://www.openassetpricing.com}{Data website} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
 }
 \examples{
 \dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}

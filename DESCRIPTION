@@ -1,10 +1,10 @@
 Package: OpenSourceAP.DownloadR
 Title: Open Source Asset Pricing (OpenAP) Data Directly in R
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: 
-    c(person("Tom", "Zimmermann", email = "tom.zimmermann@uni-koeln.de", role = c("cre","aut"), comment = c(ORCID = "0000-0002-0368-5303")),
-    person("Justus", "Boeker", email = "jboeker2smail.uni-koeln.de", role = "ctr"))
-Description: The Package provides convenient access to Open Source Asset Pricing (OpenAP) data directly in R. The package enables userrs to download predictor portfolio returns (over 200 cross-sectional predictors with multiple portfolio construction methods) and firm characteristics (over 200 characteristics replicated from the academic asset pricing literature, plus CRSP-based variables such as Price, Size, and Short-term Reversal).
+    c(person("Tom", "Zimmermann", email = "tom.zimmermann@uni-koeln.de", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-0368-5303")),
+    person("Justus", "Boeker", email = "jboeker2@smail.uni-koeln.de", role = c("ctb")))
+Description: The Package provides convenient access to Open Source Asset Pricing (OpenAP) data directly in R. It enables userrs to download predictor portfolio returns (over 200 cross-sectional predictors with multiple portfolio construction methods) and firm characteristics (over 200 characteristics replicated from the academic asset pricing literature, plus CRSP-based variables such as Price, Size, and Short-term Reversal).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -14,7 +14,7 @@ Suggests:
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-Depends: 
+Depends: R (>= 4.1.0)
 Imports:
     httr,
     rvest,

@@ -49,12 +49,13 @@ urls <- list(
 #' 2. **Firm Characteristics**:
 #'    - Access 209 firm characteristics from OpenAP (+ 3 additional characteristics from CRSP (Price, Size, Short-term Reversal)).
 #'
-#'Learn more about OpenAP: [Data webside](https://openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | [Publication](https://www.nowpublishers.com/article/Details/CFR-0112)
+#'Learn more about OpenAP: [Data website](https://openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | [Publication](https://www.nowpublishers.com/article/Details/CFR-0112)
 #'
 #' @field name_id_map A mapping between names and their corresponding IDs in the OpenAP database.
 #' @field individual_signal_id_map A mapping of unique identifiers for individual signals.
 #' @field signal_sign The direction or "sign" of the signal (i.e. positive or negative).
 #' @field url The base URL for downloading OpenAP data.
+#' @field mock Logical; if TRUE, network calls are skipped and mock data is returned for all download functions
 #'
 #'
 #' @export
@@ -65,16 +66,40 @@ OpenAP <- R6::R6Class(
     individual_signal_id_map = NULL,
     signal_sign = NULL,
     url = NULL,
+    mock = FALSE,
 
     #' @description
     #' Initializes the OpenAP class instance with data for the specified release year (or per default with the latest data).
     #' Loads mappings, individual signal IDs and signal documentation.
     #'
-    #' @param release_year
-    #'
+    #' @param release_year release_year Optional release identifier, e.g. `"2024_08"`.
+    #' @param mock Logical; if TRUE, network initialization is skipped and mock
+    #' 
     #' @examplesIf interactive()
-    #' openap_instance <- OpenAP$new(release_year = "2023")
-    initialize = function(release_year = NULL) {
+    #' # Initialize OpenAP instance (latest release)
+    #' openap <- OpenAP$new()
+    #'
+    #' # Initialize specific release
+    #' openap <- OpenAP$new(release_year = "2024_10")
+    #'
+    initialize = function(release_year = NULL, mock = FALSE) {
+
+      # Store mock flag
+      self$mock <- mock
+
+      # If we're in mock mode, skip all network work
+      if (isTRUE(self$mock)) {
+        message("Mock mode active - skipping network initialization")
+
+        # Minimal safe defaults
+        self$url <- "mock"
+        self$name_id_map <- data.frame()
+        self$individual_signal_id_map <- data.frame()
+        self$signal_sign <- data.frame()
+
+        return(invisible(self))
+      }
+
       # Get the list of available releases (with identifiers like "2024_08", "2023", etc.)
       releases <- list_release(urls)
 
@@ -129,8 +154,17 @@ OpenAP <- R6::R6Class(
     #' Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
     #'
     #' @examplesIf interactive()
-    #' openap_instance$list_port()
+    #' # list available portfolios
+    #' openap$list_port()
     list_port = function() {
+      if (isTRUE(self$mock)) {
+        return(data.frame(
+          name = c("Predictor_1"),
+          download_name = c("mock_port"),
+          stringsAsFactors = FALSE
+        ))
+      }
+
       print(self$name_id_map %>%
               dplyr::filter(stringr::str_starts(name, "Predictor")) %>%
               dplyr::select(name, download_name))
@@ -141,9 +175,6 @@ OpenAP <- R6::R6Class(
     #'
     #' @param data_name The name of the Portfolio.
     #'
-    #' @examplesIf interactive()
-    #' openap_instance$get_url("nyse")
-    #' 
     #' @keywords internal
     get_url = function(data_name) {
       # Filter the dataset for matching download_name
@@ -178,11 +209,34 @@ OpenAP <- R6::R6Class(
     #' @param predictor A vector of predictor names to filter (optional).
     #'
     #' @examplesIf interactive()
-    #' data <- openap_instance$dl_port("deciles_ew", predictor = c("Accruals"))
+    #' # Download entire portfolio file
+    #' df <- openap$dl_port("op")
+    #' 
+    #' # Download single or multiple specific predictors
+    #' df <- openap$dl_port("op", predictor = "Accruals")
+    #' df <- openap$dl_port("op", predictor = c("Accruals", "Mom12m"))
+    #' 
     dl_port = function(data_name, predictor = NULL) {
-        if (is.null(self$name_id_map)) {
-            stop("name_id_map is not initialized.")
+        if (isTRUE(self$mock)) {
+
+        # Create small mock dataset similar to real OpenAP portfolios
+        df <- data.frame(
+          signalname = rep(c("BM", "Accruals", "Mom12m"), each = 2),
+          port       = rep(c(1, 5), times = 3),
+          date       = as.Date(rep(c("2020-01-01", "2020-02-01"), times = 3)),
+          ret        = c(0.01, 0.02,  0.03, 0.01,  -0.01, 0.005),
+          stringsAsFactors = FALSE
+        )
+
+        # Apply predictor filtering
+        if (!is.null(predictor)) {
+          df <- df[df$signalname %in% predictor, ]
         }
+
+        # Guarantee valid output for tests
+        df <- dplyr::tibble(df)
+        return(df)
+      }
 
         # Get URL
         url <- self$get_url(data_name)
@@ -225,8 +279,6 @@ OpenAP <- R6::R6Class(
     #' Retrieves the URL for an individual signal based on its name.
     #' @param signal_name The name of the signal to retrieve.
     #' @return A string representing the URL of the signal.
-    #' @examplesIf interactive()
-    #' url <- openap_instance$get_individual_signal_url("Accruals.csv")
     #' 
     #' @keywords internal
     get_individual_signal_url = function(signal_name) {
@@ -350,10 +402,36 @@ OpenAP <- R6::R6Class(
     #'
     #' @return A data frame containing the signal data.
     #' @examplesIf interactive()
-    #' signals <- openap_instance$dl_signal(predictor = c("BM"))
+    #' # Download a single firm characteristic
+    #' df <- openap$dl_signal("BM")
+    #'
+    #' # Download multiple firm characteristics
+    #' df <- openap$dl_signal(c("BM", "Accruals"))
+    #' 
+    #' # Download WRDS signals (account required)
+    #' df <- openap$dl_signal("STreversal")
+    #' 
+    #' # Mix WRDS and OpenAP signals
+    #' df <- openap$dl_signal(c("BM", "STreversal"))
+    #' 
+    #' # Download unsigned versions
+    #' df <- openap$dl_signal("BM", signed = FALSE)
     dl_signal = function(predictor = NULL, signed = FALSE) {
+
       if (is.null(predictor) || identical(predictor, character(0))) {
-        stop("Predictor(s) must be specified.")
+      stop("Predictor(s) must be specified.")
+      }
+
+      # Then mock mode
+      if (isTRUE(self$mock)) {
+        df <- data.frame(
+          permno = c(1,2),
+          yyyymm = c(202001, 202002)
+        )
+        for (p in predictor) {
+          df[[p]] <- c(0.5, -0.4)
+        }
+        return(df)
       }
 
       crsp_signals <- c("Price", "Size", "STreversal")
@@ -417,8 +495,20 @@ OpenAP <- R6::R6Class(
     #' @return A data frame containing all firm level characteristics.
     #'
     #' @examplesIf interactive()
-    #' signals_data <- openap_instance$dl_all_signals()
+    #' # download all signals available
+    #' signals_data <- openap$dl_all_signals()
     dl_all_signals = function(signed = FALSE) {
+      
+      if (isTRUE(self$mock)) {
+        return(data.frame(
+          permno = c(1,2),
+          yyyymm = c(202001, 202002),
+          Size = c(10, 20),
+          Price = c(5, 7),
+          BM = c(0.1, -0.2)
+        ))
+      }
+      
       url <- self$get_url("firm_char")
       temp_file <- tempfile()
 
@@ -454,8 +544,17 @@ OpenAP <- R6::R6Class(
     #' Downloads the signal documentation CSV for the release.
     #' @return A data frame containing the signal documentation.
     #' @examplesIf interactive()
-    #' signal_doc <- openap_instance$dl_signal_doc()
+    #' # load signal documentation
+    #' signal_doc <- openap$dl_signal_doc()
     dl_signal_doc = function() {
+
+      if (isTRUE(self$mock)) {
+        return(
+        readRDS(system.file("extdata", "signal_doc_mock.rds",
+                          package = "OpenSourceAP.DownloadR"))
+        )
+      }
+
       url <- self$get_url("signal_doc")
       data <- utils::read.csv(url)
       return(data)

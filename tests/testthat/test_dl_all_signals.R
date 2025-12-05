@@ -1,14 +1,12 @@
 library(testthat)
-skip_if_not_installed("httptest")
-library(httptest)
 library(OpenSourceAP.DownloadR)
 
-test_that("dl_signal works for multiple OpenAP signals", {
-  with_mock_dir("folders", {
-    obj <- OpenAP$new()
+test_that("dl_all_signals works in mock mode", {
+  obj <- OpenAP$new(mock = TRUE)
 
-    data <- obj$dl_all_signals()
+  data <- obj$dl_all_signals()
 
-    expect_true(is.data.frame(data))
-  })
+  expect_true(is.data.frame(data))
+  expect_true(all(c("permno", "yyyymm") %in% names(data)))
+  expect_gt(nrow(data), 0)
 })

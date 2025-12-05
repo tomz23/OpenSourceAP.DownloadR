@@ -1,17 +1,12 @@
 library(testthat)
-testthat::skip_if_not_installed("httptest")
-library(httptest)
 
-test_that("list_port runs and returns a data.frame", {
-  with_mock_api({
-    obj <- OpenAP$new()
+test_that("list_port works in mock mode", {
+  obj <- OpenAP$new(mock = TRUE)
 
-    # Capture output without printing it to console
-    output <- capture.output({
-      result <- obj$list_port()
-    })
+  result <- obj$list_port()
 
-    # list_port prints the filtered map; we check it's not empty
-    expect_true(length(output) > 0)
-  })
+  expect_true(is.data.frame(result))
+  expect_true(all(c("name", "download_name") %in% names(result)))
+  expect_gt(nrow(result), 0)
 })
+

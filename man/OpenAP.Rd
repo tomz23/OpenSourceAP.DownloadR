@@ -4,7 +4,7 @@
 \alias{OpenAP}
 \title{OpenAP Download}
 \description{
-A package that allows to download data from the Open Source Asset Pricing (OpenAP) directly in R.
+Provides access to data from the Open Source Asset Pricing (OpenAP) project directly in R.
 The package enables users to access two primary types of data:
 \enumerate{
 \item \strong{Predictor Portfolio Returns}:
@@ -21,49 +21,98 @@ The package enables users to access two primary types of data:
 Learn more about OpenAP: \href{https://www.openassetpricing.com}{Data website} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | \href{https://www.nowpublishers.com/article/Details/CFR-0112}{Publication}
 }
 \examples{
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# Initialize OpenAP instance (latest release)
-openap <- OpenAP$new()
 
-# Initialize specific release
-openap <- OpenAP$new(release_year = "2024_10")
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# list available portfolios
+## ------------------------------------------------
+## Method `OpenAP$new`
+## ------------------------------------------------
+
+# Offline example
+obj <- OpenAP$new(mock = TRUE)
+
+# Real initialization (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  openap_24 <- OpenAP$new(release_year = "2024_10")
+}
+
+## ------------------------------------------------
+## Method `OpenAP$list_port`
+## ------------------------------------------------
+
+# List available portfolios  (offline example)
+openap <- OpenAP$new(mock = TRUE) 
 openap$list_port()
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# Download entire portfolio file
-df <- openap$dl_port("op")
 
-# Download single or multiple specific predictors
+# Real usage (internet connection required)
+\dontrun{
+  openap <- OpenAP$new()
+  openap$list_port()
+}
+
+## ------------------------------------------------
+## Method `OpenAP$dl_port`
+## ------------------------------------------------
+
+# Download entire portfolio file (offline example)
+openap <- OpenAP$new(mock = TRUE)
+df <- openap$dl_port("op")
+# Download with specific predictor(s) only
 df <- openap$dl_port("op", predictor = "Accruals")
-df <- openap$dl_port("op", predictor = c("Accruals", "Mom12m"))
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# Download a single firm characteristic
+
+# Real usage (internet connection required)
+\dontrun{
+  openap <- OpenAP$new()
+  df <- openap$dl_port("op", predictor = "Accruals")
+  df <- openap$dl_port("op", predictor = c("Accruals", "Mom12m"))
+}
+
+## ------------------------------------------------
+## Method `OpenAP$dl_signal`
+## ------------------------------------------------
+
+# Download firm characteristics (offline example)
+openap <- OpenAP$new(mock = TRUE)
+
+# Single signal (OpenAP or WRDS)
 df <- openap$dl_signal("BM")
 
-# Download multiple firm characteristics
-df <- openap$dl_signal(c("BM", "Accruals"))
-
-# Download WRDS signals (account required)
-df <- openap$dl_signal("STreversal")
-
-# Mix WRDS and OpenAP signals
+# Multiple signals
 df <- openap$dl_signal(c("BM", "STreversal"))
 
-# Download unsigned versions
-df <- openap$dl_signal("BM", signed = FALSE)
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# download all signals available
+# Real usage (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  df <- openap$dl_signal("BM")
+  df <- openap$dl_signal(c("BM", "STreversal"))
+  df <- openap$dl_signal("BM", signed = FALSE)
+}
+
+## ------------------------------------------------
+## Method `OpenAP$dl_all_signals`
+## ------------------------------------------------
+
+# Download all signals (offline example)
+openap <- OpenAP$new(mock = TRUE)
 signals_data <- openap$dl_all_signals()
-\dontshow{\}) # examplesIf}
-\dontshow{if (interactive()) (if (getRversion() >= "3.4") withAutoprint else force)(\{ # examplesIf}
-# load signal documentation
+
+# Real usage (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  signals_data <- openap$dl_all_signals()
+}
+
+## ------------------------------------------------
+## Method `OpenAP$dl_signal_doc`
+## ------------------------------------------------
+
+# Load signal documentation (offline example)
+openap <- OpenAP$new(mock = TRUE)
 signal_doc <- openap$dl_signal_doc()
-\dontshow{\}) # examplesIf}
+# Real usage (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  signal_doc <- openap$dl_signal_doc()
+}
 }
 \keyword{internal}
 \section{Public fields}{
@@ -111,12 +160,29 @@ Loads mappings, individual signal IDs and signal documentation.
 \subsection{Arguments}{
 \if{html}{\out{<div class="arguments">}}
 \describe{
-\item{\code{release_year}}{release_year Optional release identifier, e.g. \code{"2024_08"}.}
+\item{\code{release_year}}{Optional release identifier, e.g. \code{"2024_08"}.}
 
-\item{\code{mock}}{Logical; if TRUE, network initialization is skipped and mock}
+\item{\code{mock}}{Logical; if TRUE, network initialization is skipped and
+small mock datasets are returned instead of downloading data.
+This is intended for examples, testing, and offline use.}
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{# Offline example
+obj <- OpenAP$new(mock = TRUE)
+
+# Real initialization (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  openap_24 <- OpenAP$new(release_year = "2024_10")
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-list_port"></a>}}
@@ -125,6 +191,22 @@ Loads mappings, individual signal IDs and signal documentation.
 Returns a list of available portfolio types for the OpenAP dataset, depending on the specified release year.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$list_port()}\if{html}{\out{</div>}}
+}
+
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{# List available portfolios  (offline example)
+openap <- OpenAP$new(mock = TRUE) 
+openap$list_port()
+
+# Real usage (internet connection required)
+\dontrun{
+  openap <- OpenAP$new()
+  openap$list_port()
+}
+}
+\if{html}{\out{</div>}}
+
 }
 
 }
@@ -163,6 +245,25 @@ Downloads portfolio data for a specified data set and optionally filters by pred
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{# Download entire portfolio file (offline example)
+openap <- OpenAP$new(mock = TRUE)
+df <- openap$dl_port("op")
+# Download with specific predictor(s) only
+df <- openap$dl_port("op", predictor = "Accruals")
+
+# Real usage (internet connection required)
+\dontrun{
+  openap <- OpenAP$new()
+  df <- openap$dl_port("op", predictor = "Accruals")
+  df <- openap$dl_port("op", predictor = c("Accruals", "Mom12m"))
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-get_individual_signal_url"></a>}}
@@ -270,6 +371,29 @@ Downloads specific firm characteristics.
 \subsection{Returns}{
 A data frame containing the signal data.
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{# Download firm characteristics (offline example)
+openap <- OpenAP$new(mock = TRUE)
+
+# Single signal (OpenAP or WRDS)
+df <- openap$dl_signal("BM")
+
+# Multiple signals
+df <- openap$dl_signal(c("BM", "STreversal"))
+
+# Real usage (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  df <- openap$dl_signal("BM")
+  df <- openap$dl_signal(c("BM", "STreversal"))
+  df <- openap$dl_signal("BM", signed = FALSE)
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_all_signals"></a>}}
@@ -290,6 +414,22 @@ Downloads all firm level characteristics from the release folder.
 \subsection{Returns}{
 A data frame containing all firm level characteristics.
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{# Download all signals (offline example)
+openap <- OpenAP$new(mock = TRUE)
+signals_data <- openap$dl_all_signals()
+
+# Real usage (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  signals_data <- openap$dl_all_signals()
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-dl_signal_doc"></a>}}
@@ -303,6 +443,21 @@ Downloads the signal documentation CSV for the release.
 \subsection{Returns}{
 A data frame containing the signal documentation.
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{# Load signal documentation (offline example)
+openap <- OpenAP$new(mock = TRUE)
+signal_doc <- openap$dl_signal_doc()
+# Real usage (requires internet connection)
+\dontrun{
+  openap <- OpenAP$new()
+  signal_doc <- openap$dl_signal_doc()
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-OpenAP-clone"></a>}}

@@ -15,7 +15,8 @@ test_that("dl_port filters predictors in mock mode", {
   obj <- OpenAP$new(mock = TRUE)
   data <- obj$dl_port("mock_port", predictor = "BM")
 
-  expect_true(all(data$signalname == "BM"))
+  expect_true("signalname" %in% names(data))
+  expect_true(all(data[["signalname"]] == "BM"))
 })
 
 
@@ -24,7 +25,8 @@ test_that("dl_port handles multiple predictors", {
   obj <- OpenAP$new(mock = TRUE)
   data <- obj$dl_port("mock_port", predictor = c("BM", "Accruals"))
 
-  expect_true(all(data$signalname %in% c("BM", "Accruals")))
+  expect_true("signalname" %in% names(data))
+  expect_true(all(data[["signalname"]] %in% c("BM", "Accruals")))
 })
 
 

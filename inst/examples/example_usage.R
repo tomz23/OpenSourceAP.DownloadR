@@ -2,10 +2,6 @@
 # Tests:
 ###########################
 
-# Installing the package
-devtools::install()
-#devtools::build()
-
 library(OpenSourceAP.DownloadR)
 # documentation
 ?OpenAP

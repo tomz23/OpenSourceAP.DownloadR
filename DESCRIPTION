@@ -4,7 +4,7 @@ Version: 0.1.0
 Authors@R: 
     c(person("Tom", "Zimmermann", email = "tom.zimmermann@uni-koeln.de", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-0368-5303")),
     person("Justus", "Boeker", email = "jboeker2@smail.uni-koeln.de", role = c("ctb")))
-Description: Convenient download functions enabling access Open Source Asset Pricing (OpenAP) data. This package enables users to download predictor portfolio returns (over 200 cross-sectional predictors with multiple portfolio construction methods) and firm characteristics (over 200 characteristics replicated from the academic asset pricing literature). CRSP-based variables such as Price, Size, and Short-term Reversal can be downloaded with a WRDS subscription. For a full list of what is available, see <https://www.openassetpricing.com/>.
+Description: Convenient download functions enabling access Open Source Asset Pricing (OpenAP) data. This package enables users to download predictor portfolio returns (over 200 cross-sectional predictors with multiple portfolio construction methods) and firm characteristics (over 200 characteristics replicated from the academic asset pricing literature). Center for Research in Security Prices (CRSP)-based variables such as Price, Size, and Short-term Reversal can be downloaded with a Wharton Research Data Services (WRDS, < https://wrds-www.wharton.upenn.edu/>) subscription. For a full list of what is available, see <https://www.openassetpricing.com/>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

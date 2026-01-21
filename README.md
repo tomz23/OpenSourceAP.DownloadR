@@ -5,6 +5,8 @@
 ## Installation
 
 ```
+install.packages("OpenSourceAP.DownloadR")
+# or
 devtools::install_github("tomz23/OpenSourceAP.DownloadR")
 ```
 

@@ -259,7 +259,12 @@ OpenAP <- R6::R6Class(
 
         # Download the file to a temporary location
         temp_file <- tempfile()
-        download.file(url, temp_file, mode = "wb")  # Ensure binary mode for ZIP files
+        withr::with_options(
+          new = list(timeout = 600),
+          code = {
+            utils::download.file(url, temp_file, mode = "wb")
+          }
+        )
 
         # Check file type using magic bytes
         con <- file(temp_file, "rb")
@@ -468,7 +473,12 @@ OpenAP <- R6::R6Class(
           }
 
           temp_file <- tempfile()
-          utils::download.file(url, temp_file, mode = "wb")
+          withr::with_options(
+            new = list(timeout = 600),
+            code = {
+              utils::download.file(url, temp_file, mode = "wb")
+            }
+          )
           signal_data <- tryCatch(
             utils::read.csv(temp_file),
             error = function(e) stop(paste("Error reading data for signal:", signal_name, "-", e$message))

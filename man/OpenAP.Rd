@@ -20,7 +20,7 @@ The package enables users to access two primary types of data:
 
 Data are read from the OpenAP Hugging Face dataset
 (\url{https://huggingface.co/datasets/OpenSourceAP/CrossSection}), where each data release
-is a branch. Releases 2020.05 through 2025.10 are available; 2025.10 is the default.
+is a branch. Releases 2020.05 through 2026.10 are available; 2026.10 is the default.
 
 Learn more about OpenAP: \href{https://www.openassetpricing.com}{Data website} | \href{https://github.com/OpenSourceAP/CrossSection}{GitHub code} | Publication: \doi{10.1561/104.00000112}
 }
@@ -161,7 +161,7 @@ sign of each signal. Empty for releases without \code{SignalDoc.csv} (2021.04 an
 \if{html}{\out{<a id="method-OpenAP-new"></a>}}
 \if{latex}{\out{\hypertarget{method-OpenAP-new}{}}}
 \subsection{Method \code{new()}}{
-Initializes the OpenAP class instance with data for the specified release (or per default with the 2025.10 release).
+Initializes the OpenAP class instance with data for the specified release (or per default with the 2026.10 release).
 Loads the release's file list and signal documentation.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{OpenAP$new(release_year = NULL, mock = FALSE)}\if{html}{\out{</div>}}
@@ -171,8 +171,7 @@ Loads the release's file list and signal documentation.
 \if{html}{\out{<div class="arguments">}}
 \describe{
 \item{\code{release_year}}{Optional release identifier, e.g. \code{"2024_08"}. Accepts \code{"2024.08"} too.
-\code{"2023"} and \code{"2022"} are the 2023.08 and 2022.03 releases. \code{"2026_10"} is test data,
-not for research use.}
+\code{"2023"} and \code{"2022"} are the 2023.08 and 2022.03 releases.}
 
 \item{\code{mock}}{Logical; if TRUE, network initialization is skipped and
 small mock datasets are returned instead of downloading data.

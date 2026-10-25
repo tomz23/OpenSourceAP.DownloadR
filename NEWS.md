@@ -5,10 +5,10 @@
   Files are parquet, read with nanoparquet. Google Drive scraping is removed, and with it the
   rvest, stringr, data.table, lubridate, withr and magrittr dependencies.
 * Release ids are unchanged; `"2023"` and `"2022"` are the 2023.08 and 2022.03 releases.
-  `2025_10` stays the default.
+* `2026_10` (Data Release 2026.10, data through December 2025) is added and is the default.
 * New releases: `2020_05`, `2020_07`, `2021_03`, `2021_04` and `2022_04`. Each release's
   datasets come from its own file listing, so older releases offer only what they contain
-  (e.g. no daily portfolios before 2021.04). `2026_10` is test data and warns when selected.
+  (e.g. no daily portfolios before 2021.04).
 * New portfolio datasets: `placebo_op`, `vw_force`, `ff93`, `holdper1`, `holdper3`, `holdper6`,
   `holdper12` and the daily portfolios (`daily_op_ew`, `daily_op_vw`, `daily_deciles_ew`,
   `daily_deciles_vw`, `daily_quintiles_ew`, `daily_quintiles_vw`), where the release has them.

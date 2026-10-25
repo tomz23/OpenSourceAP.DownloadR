@@ -16,14 +16,13 @@ hf_tree_prefix <- paste0("https://huggingface.co/api/datasets/", hf_repo, "/tree
 releases <- data.frame(
   release_id = c("2026_10", "2025_10", "2024_10", "2024_08", "2023", "2022_04",
                  "2022", "2021_04", "2021_03", "2020_07", "2020_05"),
-  hf_revision = c("Test-Data-2026.10", "2025.10", "2024.10", "2024.08", "2023.08",
+  hf_revision = c("Data-Release-2026.10", "2025.10", "2024.10", "2024.08", "2023.08",
                   "2022.04", "2022.03", "2021.04", "2021.03", "2020.07", "2020.05"),
-  note = c("TEST DATA ONLY: mixed vintage, not for research use",
-           rep("", 10)),
+  note = rep("", 11),
   stringsAsFactors = FALSE
 )
 
-default_release <- "2025_10"
+default_release <- "2026_10"
 
 # other spellings of release ids, e.g. "2023.08" or 2023
 release_aliases <- c("2023_08" = "2023", "2022_03" = "2022")

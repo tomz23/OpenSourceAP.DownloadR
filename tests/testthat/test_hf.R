@@ -12,14 +12,14 @@ test_that("release ids resolve to Hugging Face branches", {
   expect_equal(resolve("2023_08")$release_id, "2023")
   expect_equal(resolve("2022")$hf_revision, "2022.03")
   expect_equal(resolve("2020_05")$hf_revision, "2020.05")
-  expect_match(resolve("2026_10")$note, "TEST DATA")
+  expect_equal(resolve("2026.10")$hf_revision, "Data-Release-2026.10")
   expect_error(resolve("1999"), "Invalid release")
 })
 
-test_that("default release is 2025_10, listed with all releases", {
+test_that("default release is 2026_10, listed with all releases", {
   releases <- suppressMessages(capture.output(
     out <- OpenSourceAP.DownloadR:::list_release()))
-  expect_equal(out$release_id[out$default], "2025_10")
+  expect_equal(out$release_id[out$default], "2026_10")
   expect_true(all(c("2020_05", "2020_07", "2021_03", "2021_04", "2022_04") %in% out$release_id))
 })
 
@@ -79,7 +79,7 @@ test_that("default release downloads from Hugging Face", {
   skip_if_offline("huggingface.co")
 
   openap <- suppressMessages(OpenAP$new())
-  expect_equal(openap$hf_revision, "2025.10")
+  expect_equal(openap$hf_revision, "Data-Release-2026.10")
   expect_gt(nrow(openap$signal_sign), 200)
 
   ports <- capture.output(port_list <- openap$list_port())
@@ -133,11 +133,4 @@ test_that("older releases follow their own layout", {
   expect_equal(names(signal), c("permno", "yyyymm", "BM"))
   expect_true(all(signal$yyyymm %% 100 %in% 1:12))
   expect_error(old$dl_signal("BM", signed = TRUE), "no signed")
-})
-
-test_that("2026_10 test data is flagged", {
-  skip_on_cran()
-  skip_if_offline("huggingface.co")
-
-  expect_warning(suppressMessages(OpenAP$new("2026_10")), "TEST DATA")
 })

@@ -14,7 +14,7 @@
 #'
 #' Data are read from the OpenAP Hugging Face dataset
 #' (<https://huggingface.co/datasets/OpenSourceAP/CrossSection>), where each data release
-#' is a branch. Releases 2020.05 through 2025.10 are available; 2025.10 is the default.
+#' is a branch. Releases 2020.05 through 2026.10 are available; 2026.10 is the default.
 #'
 #'Learn more about OpenAP: [Data website](https://www.openassetpricing.com) | [GitHub code](https://github.com/OpenSourceAP/CrossSection) | Publication: \doi{10.1561/104.00000112}
 #'
@@ -47,12 +47,11 @@ OpenAP <- R6::R6Class(
     mock = FALSE,
 
     #' @description
-    #' Initializes the OpenAP class instance with data for the specified release (or per default with the 2025.10 release).
+    #' Initializes the OpenAP class instance with data for the specified release (or per default with the 2026.10 release).
     #' Loads the release's file list and signal documentation.
     #'
     #' @param release_year Optional release identifier, e.g. `"2024_08"`. Accepts `"2024.08"` too.
-    #'   `"2023"` and `"2022"` are the 2023.08 and 2022.03 releases. `"2026_10"` is test data,
-    #'   not for research use.
+    #'   `"2023"` and `"2022"` are the 2023.08 and 2022.03 releases.
     #' @param mock Logical; if TRUE, network initialization is skipped and
     #'   small mock datasets are returned instead of downloading data.
     #'   This is intended for examples, testing, and offline use.

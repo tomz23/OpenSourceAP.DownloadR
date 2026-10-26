@@ -1,31 +1,27 @@
 Package: OpenSourceAP.DownloadR
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
+Title: Download Open Source Asset Pricing (OpenAP) Data Directly
+Version: 0.2.0
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    c(person("Tom", "Zimmermann", email = "tom.zimmermann@uni-koeln.de", role = c("aut", "cre"), comment = c(ORCID = "0000-0002-0368-5303")),
+    person("Justus", "Boeker", email = "jboeker2@smail.uni-koeln.de", role = c("ctb")))
+Description: Convenient download functions enabling access Open Source Asset Pricing (OpenAP) data. This package enables users to download predictor portfolio returns (over 200 cross-sectional predictors with multiple portfolio construction methods) and firm characteristics (over 200 characteristics replicated from the academic asset pricing literature). Center for Research in Security Prices (CRSP)-based variables such as Price, Size, and Short-term Reversal can be downloaded with a Wharton Research Data Services (WRDS, <https://wrds-www.wharton.upenn.edu/>) subscription. For a full list of what is available, see <https://www.openassetpricing.com/>. Data are read from the OpenAP Hugging Face dataset <https://huggingface.co/datasets/OpenSourceAP/CrossSection>, which holds data releases from 2020 onward.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+RoxygenNote: 7.3.3
 Suggests: 
+    knitr,
+    rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-Depends: 
-    data.table,
-    DBI,
-    dplyr,
-    getPass,
+Depends: R (>= 4.1.0)
+Imports:
     httr,
+    curl,
     jsonlite,
-    lubridate,
+    nanoparquet,
+    dplyr,
     R6,
-    rlang,
-    roxygen2,
+    DBI,
     RPostgres,
-    rvest,
-    stringr,
-    tidyverse,
-    withr
+    getPass

@@ -1,0 +1,21 @@
+citHeader("If you use the data, please cite our paper:")
+
+bibentry(
+  bibtype = "Article",
+  title = "Open Source Cross-Sectional Asset Pricing",
+  author = c(
+    person("Andrew Y.", "Chen"),
+    person("Tom", "Zimmermann")
+  ),
+  journal = "Critical Finance Review",
+  year = "2022",
+  volume = "11",
+  number = "2",
+  pages = "207--264",
+  doi = "10.1561/104.00000112",
+  textVersion = paste(
+    "Chen, A.Y. and Zimmermann, T. (2022).",
+    "Open Source Cross-Sectional Asset Pricing.",
+    "Critical Finance Review, 11(2), 207–264."
+  )
+)

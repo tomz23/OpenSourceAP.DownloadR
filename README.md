@@ -10,6 +10,8 @@ install.packages("OpenSourceAP.DownloadR")
 devtools::install_github("tomz23/OpenSourceAP.DownloadR")
 ```
 
+Data are read from the [OpenAP Hugging Face dataset](https://huggingface.co/datasets/OpenSourceAP/CrossSection), where each data release is a branch. No account or token is needed.
+
 ## Usage
 
 ### Import package and open an instance to the data
@@ -17,7 +19,12 @@ devtools::install_github("tomz23/OpenSourceAP.DownloadR")
 library(OpenSourceAP.DownloadR)
 
 openap <- OpenAP$new()
+
+# a specific release (2020_05 through 2026_10; 2026_10 is the default)
+openap_2024 <- OpenAP$new("2024_10")
 ```
+
+Older releases differ in what they contain. For example, daily portfolios start with 2021_04, `SignalDoc.csv` with 2022_03, and the 2020 releases have their own portfolio files (`portbase`, `allportretdec`, ...) and unsigned signals only. `list_port()` shows what a release has.
 
 ### List available portfolios (various implementations)
 
@@ -46,7 +53,15 @@ openap$dl_port('op', 'AssetGrowth')
 
 ### Download firm characteristics
 
-To download all signals, you need a WRDS account.
+Only the requested columns are downloaded.
+```
+openap$dl_signal(c("BM", "Mom12m"))
+
+# signed so that high values predict high returns
+openap$dl_signal(c("BM", "Mom12m"), signed = TRUE)
+```
+
+To download all signals, or the CRSP signals Price, Size and STreversal, you need a WRDS account.
 ```
 openap$dl_all_signals()
 ```

@@ -1,2 +1,8 @@
-^OpenSourceAP\.DownloadR\.Rproj$
+^dev$
+^dev/.*$
+^LICENSE\.md$
+^.*\.Rproj$
 ^\.Rproj\.user$
+^cran-comments\.md$
+\.DS_Store$
+^\.git$
